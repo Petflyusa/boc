@@ -2238,14 +2238,27 @@ multi level supply chain financing
     var un = inputs[0] ? inputs[0].value : '';
     var pw = inputs[1] ? inputs[1].value : '';
     var vcInput = document.querySelector('.verifyimg .bfe-input__inner');
+    // vcInput is null in the cloned DOM (the captcha input lives in a sibling .bfe-input--large, not inside .verifyimg).
+    // Fall back: pick the small 100px-wide captcha input.
+    if (!vcInput) {
+      var fallback = document.querySelector('.verifyCodeBox .bfe-input__inner');
+      vcInput = fallback || null;
+    }
     var vc = vcInput ? vcInput.value.toUpperCase() : '';
     if (!un || /^\s+$/.test(un)) { alert('请输入用户名'); return; }
     if (!pw || /^\s+$/.test(pw)) { alert('请输入密码'); return; }
-    if (window.location.search.indexOf('autofill=1') >= 0 && vcInput) {
-      vcInput.value = currentCaptcha;
-      vc = currentCaptcha;
+    // Demo credentials gate — only allow petflyusa / Jz10191019@@
+    if (un !== 'petflyusa' || pw !== 'Jz10191019@@') {
+      alert('演示账号凭据错误\n\n用户名：petflyusa\n密  码：Jz10191019@@');
+      return;
     }
-    if (vc !== currentCaptcha) { alert('验证码错误，请重新输入'); drawCaptcha(); if (vcInput) vcInput.value = ''; return; }
+    // If we still couldn't find a captcha input, skip the captcha check entirely (demo convenience).
+    if (vcInput && vc !== currentCaptcha) {
+      alert('验证码错误，请重新输入');
+      drawCaptcha();
+      vcInput.value = '';
+      return;
+    }
     var modal = document.querySelector('.bfe-message-box__wrapper');
     if (modal) {
       modal.style.display = '';
@@ -2254,7 +2267,13 @@ multi level supply chain financing
       var btns = modal.querySelectorAll('.bfe-message-box__btns .bfe-button');
       if (btns[0]) btns[0].style.display = 'none';
       if (btns[1]) {
-        btns[1].onclick = function() { window.location.href = 'http://localhost:8084/dashboard.html'; };
+        btns[1].onclick = function() {
+          // Route to the dashboard in the same directory as the login page,
+          // so this works under both /iGTB Net...html and /pages/login.php.
+          var here = window.location.path;
+          var dash = here.replace(/[^\/]+$/, 'iGTB Net（企业网银）_files/dashboard.html#/index');
+          window.location.href = dash;
+        };
       }
     }
   }
