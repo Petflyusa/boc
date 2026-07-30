@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iGTB 企业网银登录</title>
+<link rel="stylesheet" href="https://cdn1.igtb.bankofchina.com/assets/css/chunk-vendors.05133208.css">
+<link rel="stylesheet" href="https://cdn1.igtb.bankofchina.com/assets/css/index.fcd373de.css">
+<link rel="stylesheet" href="https://cdn1.igtb.bankofchina.com/assets/css/login-page.7003b2b7.css">
+<style>
+body { margin: 0; padding: 0; background: #f5f6f8; font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif; }
+
+/* Hide any Vue/Vuex leftover / loading spinner in the demo password field */
+.bfe-secpwd-input { position: relative; }
+.bfe-secpwd-input input { opacity: 1 !important; }
+
+/* Demo login form - rendered as a sibling to the Vue form so Vue cannot overwrite it */
+.demo-overlay {
+  position: fixed;
+  inset: 0;
+  background: #f5f6f8;
+  z-index: 99999;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  overflow-y: auto;
+}
+
+.demo-overlay-inner {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.demo-overlay-header {
+  height: 56px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  border-bottom: 1px solid #ebedf0;
+}
+.demo-overlay-header .logo {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 16px; color: #262626; font-weight: 600;
+}
+.demo-overlay-header .logo img { height: 28px; }
+.demo-overlay-header .links { font-size: 13px; color: #8c8c8c; }
+.demo-overlay-header .links span { margin-left: 24px; cursor: pointer; }
+
+.demo-banner {
+  width: 100%;
+  height: 320px;
+  background: #1a357a url('https://cdn1.igtb.bankofchina.com/img/banner-background-new.jpg') center/cover no-repeat;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+.demo-banner::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(26,53,122,.65) 0%, rgba(13,31,82,.85) 100%); }
+.demo-banner-content { position: relative; z-index: 1; text-align: center; padding: 0 24px; }
+.demo-banner-content h1 { font-size: 36px; margin: 0 0 12px; font-weight: 600; }
+.demo-banner-content p { font-size: 16px; opacity: 0.85; margin: 0; }
+
+/* Form card overlays the banner like the original */
+.demo-form-card {
+  width: 100%;
+  max-width: 560px;
+  margin: -80px auto 60px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  padding: 32px 40px 36px;
+  position: relative;
+  z-index: 2;
+}
+.demo-form-tabs {
+  display: flex;
+  border-bottom: 1px solid #ebedf0;
+  margin-bottom: 28px;
+}
+.demo-form-tabs span {
+  flex: 1;
+  text-align: center;
+  padding: 14px 0;
+  font-size: 15px;
+  color: #8c8c8c;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+.demo-form-tabs span.active {
+  color: #1a357a;
+  border-bottom-color: #1a357a;
+  font-weight: 600;
+}
+.demo-form-tip {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin: -16px 0 20px;
+  text-align: center;
+}
+.demo-form-row { margin-bottom: 20px; position: relative; }
+.demo-form-row label {
+  display: block;
+  font-size: 13px;
+  color: #595959;
+  margin-bottom: 8px;
+}
+.demo-form-row .demo-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  padding: 0 12px;
+  height: 42px;
+  background: #fff;
+  transition: border-color 0.2s;
+}
+.demo-form-row .demo-input-wrap:focus-within {
+  border-color: #1a357a;
+  box-shadow: 0 0 0 2px rgba(26,53,122,0.1);
+}
+.demo-form-row input {
+  flex: 1;
+  border: none;
+  outline: none;
+  height: 100%;
+  background: transparent;
+  font-size: 14px;
+  color: #262626;
+  min-width: 0;
+}
+.demo-form-row .demo-captcha-img {
+  width: 110px;
+  height: 36px;
+  margin-left: 8px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #1a357a, #0d1f52);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  letter-spacing: 4px;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+  font-style: italic;
+}
+.demo-form-row .demo-error {
+  font-size: 12px;
+  color: #f5222d;
+  margin-top: 4px;
+  display: none;
+}
+.demo-btn-login {
+  width: 100%;
+  height: 44px;
+  background: #1a357a;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.2s;
+  font-weight: 500;
+}
+.demo-btn-login:hover { background: #0d1f52; }
+.demo-btn-login:active { background: #0a1740; }
+
+/* Bottom feature grid (matches original page) */
+.demo-features {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto 60px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  padding: 0 32px;
+}
+.demo-feature {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.demo-feature:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+}
+.demo-feature-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px;
+  background: #f0f4ff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #1a357a;
+}
+.demo-feature-title {
+  font-size: 14px;
+  color: #262626;
+  font-weight: 500;
+}
+
+.demo-footer {
+  margin-top: auto;
+  background: #fff;
+  border-top: 1px solid #ebedf0;
+  padding: 20px;
+  text-align: center;
+  font-size: 12px;
+  color: #8c8c8c;
+}
+.demo-footer a { color: #8c8c8c; text-decoration: none; margin: 0 8px; }
+.demo-footer a:hover { color: #1a357a; }
+
+.demo-success-modal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 999999;
+  align-items: center;
+  justify-content: center;
+}
+.demo-success-modal.show { display: flex; }
+.demo-success-box {
+  background: #fff;
+  border-radius: 8px;
+  padding: 40px;
+  text-align: center;
+  max-width: 360px;
+}
+.demo-success-box h3 { color: #1a357a; margin: 0 0 16px; font-size: 20px; }
+.demo-success-box p { color: #666; margin: 0 0 24px; line-height: 1.6; font-size: 14px; }
+.demo-success-box button {
+  background: #1a357a; color: #fff; border: none;
+  padding: 10px 32px; border-radius: 4px; cursor: pointer; font-size: 14px;
+}
+</style>
+</head>
+<body>
+
+<div class="demo-overlay" id="demoOverlay">
+  <div class="demo-overlay-inner">
+
+    <div class="demo-overlay-header">
+      <div class="logo">
+        <span>iGTB 企业网上银行</span>
+      </div>
+      <div class="links">
+        <span onclick="alert('电子银行章程')">电子银行章程</span>
+        <span onclick="alert('网银业务规则')">网银业务规则</span>
+      </div>
+    </div>
+
+    <div class="demo-banner">
+      <div class="demo-banner-content">
+        <h1>欢迎使用 iGTB 企业网银</h1>
+        <p>中国银行股份有限公司</p>
+      </div>
+    </div>
+
+    <div class="demo-form-card">
+      <div class="demo-form-tabs">
+        <span class="active">密码登录</span>
+        <span onclick="alert('演示版本：仅支持密码登录')">数字证书登录</span>
+        <span onclick="alert('演示版本：仅支持密码登录')">动态口令登录</span>
+      </div>
+      <div class="demo-form-tip">密码登录仅支持查询功能</div>
+
+      <form id="demoForm" autocomplete="off" onsubmit="return false;">
+        <div class="demo-form-row">
+          <label>用户名</label>
+          <div class="demo-input-wrap">
+            <input type="text" id="loginName" placeholder="请输入用户名" autocomplete="off">
+          </div>
+          <div class="demo-error" id="loginNameErr">请输入用户名</div>
+        </div>
+
+        <div class="demo-form-row">
+          <label>用户密码</label>
+          <div class="demo-input-wrap">
+            <input type="password" id="secpwd" placeholder="请输入用户密码" autocomplete="new-password">
+          </div>
+          <div class="demo-error" id="passWordErr">请输入用户密码</div>
+        </div>
+
+        <div class="demo-form-row">
+          <label>验证码</label>
+          <div class="demo-input-wrap">
+            <input type="text" id="verifyCode" placeholder="请输入验证码" maxlength="4" autocomplete="off" style="text-transform: uppercase;">
+            <div class="demo-captcha-img" id="captchaDisplay" onclick="refreshCaptcha()" title="点击刷新验证码"></div>
+          </div>
+          <div class="demo-error" id="verifyCodeErr">验证码不正确</div>
+        </div>
+
+        <button type="button" class="demo-btn-login" onclick="doDemoLogin()">登录</button>
+      </form>
+    </div>
+
+    <div class="demo-features">
+      <div class="demo-feature"><div class="demo-feature-icon">⬇</div><div class="demo-feature-title">网银助手及软件下载</div></div>
+      <div class="demo-feature"><div class="demo-feature-icon">📄</div><div class="demo-feature-title">回单验证</div></div>
+      <div class="demo-feature"><div class="demo-feature-icon">✓</div><div class="demo-feature-title">业务验证</div></div>
+      <div class="demo-feature"><div class="demo-feature-icon">💰</div><div class="demo-feature-title">大额取现预约</div></div>
+      <div class="demo-feature"><div class="demo-feature-icon">🔒</div><div class="demo-feature-title">证书服务</div></div>
+      <div class="demo-feature"><div class="demo-feature-icon">📊</div><div class="demo-feature-title">企业e管家</div></div>
+      <div class="demo-feature"><div class="demo-feature-icon">📋</div><div class="demo-feature-title">货贸企业名录登记</div></div>
+      <div class="demo-feature"><div class="demo-feature-icon">📅</div><div class="demo-feature-title">业务进程跟踪</div></div>
+      <div class="demo-feature"><div class="demo-feature-icon">🔐</div><div class="demo-feature-title">安全中心</div></div>
+      <div class="demo-feature"><div class="demo-feature-icon">⋯</div><div class="demo-feature-title">更多功能</div></div>
+    </div>
+
+    <div class="demo-footer">
+      <a href="javascript:void(0)">电子银行章程</a>|
+      <a href="javascript:void(0)">网银业务规则</a>|
+      服务热线：95566
+      <br>
+      © 中国银行股份有限公司 版权所有
+    </div>
+  </div>
+</div>
+
+<!-- Success Modal -->
+<div class="demo-success-modal" id="successModal">
+  <div class="demo-success-box">
+    <h3>✓ 演示登录成功</h3>
+    <p id="successMsg">您输入的账号信息<br>这是一次模拟登录演示</p>
+    <button onclick="closeSuccessModal()">确定</button>
+  </div>
+</div>
+
+<script>
+var currentCaptcha = '';
+function generateCaptcha() {
+  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var result = '';
+  for (var i = 0; i < 4; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+function refreshCaptcha() {
+  currentCaptcha = generateCaptcha();
+  document.getElementById('captchaDisplay').textContent = currentCaptcha;
+}
+function validateDemo() {
+  var loginName = document.getElementById('loginName').value.trim();
+  var secpwd = document.getElementById('secpwd').value;
+  var verifyCode = document.getElementById('verifyCode').value.trim().toUpperCase();
+  var valid = true;
+  var loginNameErr = document.getElementById('loginNameErr');
+  if (!loginName || loginName.length < 1 || /^\s+$/.test(loginName)) {
+    loginNameErr.style.display = 'block'; valid = false;
+  } else {
+    loginNameErr.style.display = 'none';
+  }
+  var passWordErr = document.getElementById('passWordErr');
+  if (!secpwd || secpwd.length < 1 || /^\s+$/.test(secpwd)) {
+    passWordErr.style.display = 'block'; valid = false;
+  } else {
+    passWordErr.style.display = 'none';
+  }
+  var verifyCodeErr = document.getElementById('verifyCodeErr');
+  if (!verifyCode || verifyCode !== currentCaptcha) {
+    verifyCodeErr.style.display = 'block'; refreshCaptcha(); valid = false;
+  } else {
+    verifyCodeErr.style.display = 'none';
+  }
+  return valid;
+}
+function doDemoLogin() {
+  if (!validateDemo()) return;
+  var loginName = document.getElementById('loginName').value.trim();
+  document.getElementById('successMsg').innerHTML =
+    '用户名：<b>' + loginName + '</b><br><br><span style="color:#1a357a;font-size:14px">正在跳转到控制台...</span>';
+  document.getElementById('successModal').classList.add('show');
+  setTimeout(function() {
+    window.location.href = 'http://localhost:8084/dashboard.html';
+  }, 800);
+}
+function closeSuccessModal() {
+  document.getElementById('successModal').classList.remove('show');
+}
+refreshCaptcha();
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doDemoLogin();
+});
+</script>
+
+</body>
+</html>

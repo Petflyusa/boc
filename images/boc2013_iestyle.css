@@ -1,0 +1,97 @@
+@charset "utf-8";
+.wrapper{width:980px;}
+/*header*/
+#home .header{background:url(boc2013_header_bg1.jpg) no-repeat;}
+.header{background:url(boc2013_header_bg2.jpg) no-repeat;width:980px;height:159px;border:0;clear:both;}
+.header_area{height:91px;}
+.search_bar .search_ipt{height:21px;padding-top:6px;}
+.search_bar .search_btn{position:absolute;}
+
+.menu li.li_2013{*width:12.4%;}
+.sub_pic img{margin:0px 0 10px 0px;}
+.footer_area{height:44px;}
+/*main*/
+.content{float:left;width:718px;display:inline;margin-right:15px;}
+.slider{float:right;width:242px;display:inline; }
+.area_box2 dl dd,.list li,.list p{background-position:0 -74px;}
+.serve2 dl dd,.area_box6 dl dd,.per_bank_serv dl dd a{height:26px;overflow:hidden;}
+.phone_bk{height:78px;width:242px;border:0;background-position:0px -519px;}
+
+.zz2{display:inline;}
+.zz2 .hover_menu{padding:5px 10px;width:255px;position:absolute;_left:0;_top:35px;}
+.bank_tab .tab_nav{position:absolute;right:20px;_top:-47px;}
+.bank_tab .tab_nav li{z-index:10;_height:46px;_line-height:46px;}
+.bank_tab .tab_nav li a{_padding-top:0;_padding-bottom:0;}
+.title .fr{*margin-top:-30px;}
+.serve1 .area_box{clear:both;}
+.ATM_key{width:204px;height:25px;padding:8px 0px 0 4px;}
+.serve4 .s_tab{padding-left:10px;width:454px;}
+.overseas .hover_menu{width:168px;padding:0;}
+.loginBox .overseas .hover_menu li,.hover_menu li a{_margin:0;}
+.tab_nav{*position:relative;z-index:10;margin-bottom:-1px;}
+.tab_nav li{*margin-bottom:0;}
+
+
+.msg1{width:277px;}
+
+.ft_a a{_background-position:right -100px;}
+.area_l .share span{background:url(boc2013_icon.png) no-repeat 0 -546px;}
+*html .index_tab .tab_nav li.selected i{_bottom:-1px;z-index:7;}
+.serves1 .con_r{_margin-left:20px;_width:280px;}
+.serves1 .con_l,.serves1 .con_r{_display:inline;}
+.serves1 .con_l{_width:600px;}
+.serves1 .con_l p{_overflow:hidden;_white-space:nowrap;}
+.serves2 .con_l{_width:277px;}
+.serves2_ft a{_display:inline-block;_margin-right:20px;}
+.bb .bb_r{*width:300px;*display:inline;}
+.bb .more{_bottom:20px;}
+.bb .bb_r .more{_bottom:36px;*padding-right:0;*right:-6px;}
+.map{width:980px;}
+.map img{_float:left;}
+.map_area{_display:inline;}
+.publish .turn_page{width:530px;_margin:0 0 0 100px;float:left;}
+.benefit_tab .tab_nav li.selected a.current1:hover,.benefit_tab .tab_nav li.selected a:hover{background-position:0 -321px;}
+.benefit_tab .tab_nav li.selected a.current2:hover,.benefit_tab .tab_nav li.selected a:hover{background-position:-163px -321px;}
+.benefit_tab .tab_nav li.selected a.current3:hover,.benefit_tab .tab_nav li.selected a:hover{background-position:-326px -321px;}
+.benefit_tab .tab_nav li.selected a.current4:hover,.benefit_tab .tab_nav li.selected a:hover{background-position:-489px -321px;}
+.benefit_tab .tab_nav li.selected a.current5:hover,.benefit_tab .tab_nav li.selected a:hover{background-position:-652px -321px;}
+.benefit_tab .tab_nav li.selected a.current6:hover,.benefit_tab .tab_nav li.selected a:hover{background-position:-815px -321px;}
+#wrapDiv .bx_wrap{margin-left:40px;}
+.scroller{width:615px\9;_width:605px;}
+#bx_container li{margin:0;}
+.msg2{padding:20px 20px;}
+
+#wrapDiv .scroller{*width:245px;}
+#wrapDiv #bx_container li{*width:156px;margin:0 5px;}
+#card1 .bx_wrap, #card2 .bx_wrap{*margin-left:60px;}
+#card1 #bx_container li, #card2 #bx_container li{*width:156px;}
+#card1, #card2{width:680px;}
+#card1 #bx_container li, #card2 #bx_container li{*margin:0;}
+.invest_t div{width:300px;}
+.invest_t div .search_bar{margin:0 0 0 4px;*position:absolute;*top:0;}
+.invest_t .search_ipt{width:145px;}
+.invest_t .search_btn{cursor:pointer;right:0;*top:3px;}
+
+.invest_t .search_ipt{*height:20px;}
+.co_bg span{*white-space:nowrap;}
+.common{*margin-right:19px;}
+.area_r{*width:270px;}
+.area_l{*width:300px;}
+.picBox{*height:124px;*overflow:visible;}
+
+.list li,
+.list_tg li,
+.serve_ft p a,
+.topic_hot a,
+.bk_card .fr a,
+.per_bank_serv dl dd a,
+.news .list li a,
+.card_ft dl dd,
+.benefit_tab .fr ul li,
+.newList dd,
+.box8 .jg_list li em{*display:inline-block;}
+
+.loginBox{overflow:hidden;zoom:1;*float:left;*width:200px;}
+.loginBox ul{*float:left;*width:100%;}
+.box{clear:both;}
+.info_2 .info2_menu li{+line-height:0px;}
