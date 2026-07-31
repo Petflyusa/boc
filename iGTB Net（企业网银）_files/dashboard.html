@@ -2206,7 +2206,7 @@ multi level supply chain financing
             oprId: 'demo-operator',
             oprName: '演示操作员',
             custId: 'demo-customer',
-            custName: '西安硕翼通用航空有限公司',
+            custName: '酒店管理公司',
             role: 'admin',
             token: 'demo-token',
             sessionId: 'demo-session'
@@ -2216,8 +2216,9 @@ multi level supply chain financing
       }));
       console.log('[demo] Vuex session injected at attempt', attempts);
     }
-    // After injecting, force-navigate to the originally-requested route
-    // so the guard re-evaluates with the new session.
+    // Always force-replace to the target path. Without this, the SPA's router
+    // guard runs synchronously during initial history.replaceState and bounces
+    // the user to /login-page before our patch has a chance to set oprId.
     var desired = '/index';
     var hash = location.hash || '';
     var m = hash.match(/redirect=([^&]+)/);
@@ -2225,15 +2226,10 @@ multi level supply chain financing
       var target = decodeURIComponent(m[1]);
       if (target && target !== '/login-page') desired = target;
     } else {
-      // No redirect param — look at the bare path (e.g. #/work-bench/todo)
       var bare = hash.replace(/^#/, '').split('?')[0];
       if (bare) desired = bare;
     }
-    if (location.hash.indexOf(desired) === -1) {
-      // Use replace so we don't pile up history entries while the SPA is
-      // bouncing between login-page and the target.
-      location.replace(location.pathname + '#' + desired);
-    }
+    location.replace(location.pathname + '#' + desired);
   }
   tryPatch(0);
 })();

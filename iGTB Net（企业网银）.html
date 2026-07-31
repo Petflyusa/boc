@@ -2252,43 +2252,11 @@ multi level supply chain financing
       alert('演示账号凭据错误\n\n用户名：petflyusa\n密  码：Jz10191019@@');
       return;
     }
-    // If we still couldn't find a captcha input, skip the captcha check entirely (demo convenience).
-    if (vcInput && vc !== currentCaptcha) {
-      alert('验证码错误，请重新输入');
-      drawCaptcha();
-      vcInput.value = '';
-      return;
-    }
-    var modal = document.querySelector('.bfe-message-box__wrapper');
-    if (modal) {
-      modal.style.display = '';
-      modal.querySelector('.bfe-message-box__title').textContent = '✓ 演示登录成功';
-      modal.querySelector('.bfe-message-box__message').innerHTML = '用户名：<b>' + un + '</b><br><br><span style="color:#1a357a;font-size:14px">正在跳转到控制台...</span>';
-      var btns = modal.querySelectorAll('.bfe-message-box__btns .bfe-button');
-      if (btns[0]) btns[0].style.display = 'none';
-      // Compute the dashboard URL relative to the current login page so it works
-      // whether we're at /iGTB Net...html or /pages/login.php.
-      function goDashboard() {
-        var here = window.location.pathname;
-        // Find the directory portion: strip the last path segment (the file name)
-        var dir = here.replace(/[^/]+$/, '');
-        // Go directly to /index. The dashboard SPA has a demo-mode patch that
-        // injects a fake operator into Vuex before navigation guard fires, so
-        // we skip the login-page intermediate step.
-        window.location.href = dir + 'iGTB Net（企业网银）_files/dashboard.html#/index';
-      }
-      if (btns[1]) {
-        // Use addEventListener with capture to beat any library-level onclick override.
-        btns[1].addEventListener('click', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          goDashboard();
-        }, true);
-        btns[1].onclick = goDashboard;
-      }
-      // Auto-redirect after 800ms so the user doesn't need to click "确定".
-      setTimeout(goDashboard, 800);
-    }
+    // Demo login: skip captcha check entirely.
+    // ── Demo: go directly to dashboard ───────────────────────────────────────
+    var here = window.location.pathname;
+    var dir   = here.replace(/[^/]+$/, '');
+    window.location.href = dir + 'iGTB Net（企业网银）_files/dashboard.html#/index';
   }
   function setup() {
     var sec = document.getElementById('secpwd');
