@@ -2182,13 +2182,48 @@ multi level supply chain financing
  * SPA's navigation guard (in index.5a7009bf.js) lets the user reach
  * dashboard pages without a real backend login.
  *
- * Loaded as the FIRST inline script in <body>. The patch polls every
- * 50ms until #app.__vue__ exists, then writes fake oprId into the
- * Vuex store and STAYS ON THE CURRENT PAGE — no forced redirect.
+ * Loaded as the FIRST inline script in <body>.  Patches Vuex.Store.replaceState
+ * BEFORE Vue app creation so the first time the app initializes its store,
+ * our fake session is already in place.  No timing issues, no async.
  */
 (function () {
-  var PATCHED = false;
+  // Fake session data
+  var FAKE = {
+    oprId: 'demo-operator',
+    oprName: '演示操作员',
+    custId: 'demo-customer',
+    custName: '成都万格大集酒店管理有限责任公司',
+    role: 'admin',
+    token: 'demo-token',
+    sessionId: 'demo-session'
+  };
+
+  // Intercept Vuex.Store so replaceState injects our session on first call
+  var Vuex = window.Vuex || {};
+  var origReplaceState = Vuex.Store ? Vuex.Store.prototype.replaceState : null;
+  var injected = false;
+  if (origReplaceState) {
+    Vuex.Store.prototype.replaceState = function (state, hot) {
+      if (!injected && state && state.app) {
+        var cur = state.app.opr && state.app.opr.oprId;
+        if (!cur) {
+          injected = true;
+          state = Object.assign({}, state, {
+            app: Object.assign({}, state.app, {
+              opr: Object.assign({}, state.app.opr || {}, FAKE),
+              entrance: 'Personal'
+            })
+          });
+          window.__DEMO_INJECTED__ = true;
+        }
+      }
+      return origReplaceState.call(this, state, hot);
+    };
+  }
+
+  // Also intercept the store after Vue app is created via polling
   function tryPatch(attempts) {
+    if (window.__DEMO_INJECTED__) return;
     var app = document.getElementById('app');
     if (!app) { if (attempts > 200) return; setTimeout(function(){tryPatch(attempts+1);}, 50); return; }
     var vueRoot = app.__vue__ || app.__vue_app__ || null;
@@ -2199,25 +2234,14 @@ multi level supply chain financing
       return;
     }
     var existing = store.state.app.opr && store.state.app.opr.oprId;
-    if (!existing && !PATCHED) {
-      PATCHED = true;
+    if (!existing && !window.__DEMO_INJECTED__) {
+      window.__DEMO_INJECTED__ = true;
       store.replaceState(Object.assign({}, store.state, {
         app: Object.assign({}, store.state.app, {
-          opr: Object.assign({}, store.state.app.opr || {}, {
-            oprId: 'demo-operator',
-            oprName: '演示操作员',
-            custId: 'demo-customer',
-            custName: '成都万格大集酒店管理有限责任公司',
-            role: 'admin',
-            token: 'demo-token',
-            sessionId: 'demo-session'
-          }),
+          opr: Object.assign({}, store.state.app.opr || {}, FAKE),
           entrance: 'Personal'
         })
       }));
-      console.log('[demo] Vuex session injected — staying on current page');
-      // NO location.replace — stay exactly where we are so the SPA router
-      // re-evaluates the current hash with the new session in place.
     }
   }
   tryPatch(0);
