@@ -2222,20 +2222,22 @@ multi level supply chain financing
   }
 
   // Also intercept the store after Vue app is created via polling
+  var _timer = null;
   function tryPatch(attempts) {
-    if (window.__DEMO_INJECTED__) return;
+    if (window.__DEMO_INJECTED__) { if (_timer) clearTimeout(_timer); return; }
     var app = document.getElementById('app');
-    if (!app) { if (attempts > 200) return; setTimeout(function(){tryPatch(attempts+1);}, 50); return; }
+    if (!app) { if (attempts > 200) return; _timer = setTimeout(function(){tryPatch(attempts+1);}, 50); return; }
     var vueRoot = app.__vue__ || app.__vue_app__ || null;
     var store = vueRoot && (vueRoot.$store || (vueRoot._provided && vueRoot._provided.$store));
     if (!store || !store.state || !store.state.app) {
       if (attempts > 200) return;
-      setTimeout(function(){tryPatch(attempts+1);}, 50);
+      _timer = setTimeout(function(){tryPatch(attempts+1);}, 50);
       return;
     }
     var existing = store.state.app.opr && store.state.app.opr.oprId;
     if (!existing && !window.__DEMO_INJECTED__) {
       window.__DEMO_INJECTED__ = true;
+      if (_timer) { clearTimeout(_timer); _timer = null; }
       store.replaceState(Object.assign({}, store.state, {
         app: Object.assign({}, store.state.app, {
           opr: Object.assign({}, store.state.app.opr || {}, FAKE),
