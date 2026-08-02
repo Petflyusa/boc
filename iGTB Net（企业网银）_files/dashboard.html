@@ -2180,14 +2180,14 @@ multi level supply chain financing
 <script>
 /* Demo patch: inject a fake logged-in operator into the Vuex store so the
  * SPA's navigation guard (in index.5a7009bf.js) lets the user reach
- * /index, /work-bench, etc. without a real backend login.
+ * dashboard pages without a real backend login.
  *
  * Loaded as the FIRST inline script in <body>. The patch polls every
  * 50ms until #app.__vue__ exists, then writes fake oprId into the
- * Vuex store and force-replaces the route to the intended path so the
- * navigation guard re-evaluates with the new session.
+ * Vuex store and STAYS ON THE CURRENT PAGE — no forced redirect.
  */
 (function () {
+  var PATCHED = false;
   function tryPatch(attempts) {
     var app = document.getElementById('app');
     if (!app) { if (attempts > 200) return; setTimeout(function(){tryPatch(attempts+1);}, 50); return; }
@@ -2199,7 +2199,8 @@ multi level supply chain financing
       return;
     }
     var existing = store.state.app.opr && store.state.app.opr.oprId;
-    if (!existing) {
+    if (!existing && !PATCHED) {
+      PATCHED = true;
       store.replaceState(Object.assign({}, store.state, {
         app: Object.assign({}, store.state.app, {
           opr: Object.assign({}, store.state.app.opr || {}, {
@@ -2214,22 +2215,10 @@ multi level supply chain financing
           entrance: 'Personal'
         })
       }));
-      console.log('[demo] Vuex session injected at attempt', attempts);
+      console.log('[demo] Vuex session injected — staying on current page');
+      // NO location.replace — stay exactly where we are so the SPA router
+      // re-evaluates the current hash with the new session in place.
     }
-    // Always force-replace to the target path. Without this, the SPA's router
-    // guard runs synchronously during initial history.replaceState and bounces
-    // the user to /login-page before our patch has a chance to set oprId.
-    var desired = '/index';
-    var hash = location.hash || '';
-    var m = hash.match(/redirect=([^&]+)/);
-    if (m) {
-      var target = decodeURIComponent(m[1]);
-      if (target && target !== '/login-page') desired = target;
-    } else {
-      var bare = hash.replace(/^#/, '').split('?')[0];
-      if (bare) desired = bare;
-    }
-    location.replace(location.pathname + '#' + desired);
   }
   tryPatch(0);
 })();
