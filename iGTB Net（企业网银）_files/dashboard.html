@@ -2205,22 +2205,30 @@ multi level supply chain financing
            pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
   }
   
-  // Current login time: real-time clock, update every second
-  var currentEl = document.getElementById('currentLoginTime');
-  if (currentEl) {
-    function updateCurrentTime() {
-      currentEl.textContent = formatTime(new Date());
+  function init() {
+    // Current login time: real-time clock, update every second
+    var currentEl = document.getElementById('currentLoginTime');
+    if (currentEl) {
+      function updateCurrentTime() {
+        currentEl.textContent = formatTime(new Date());
+      }
+      updateCurrentTime();
+      setInterval(updateCurrentTime, 1000);
     }
-    updateCurrentTime();
-    setInterval(updateCurrentTime, 1000);
+    
+    // Last login time: current time - 18 hours (set once)
+    var lastEl = document.getElementById('lastLoginTime');
+    if (lastEl) {
+      var lastTime = new Date();
+      lastTime.setTime(lastTime.getTime() - 18 * 60 * 60 * 1000);
+      lastEl.textContent = formatTime(lastTime);
+    }
   }
   
-  // Last login time: current time - 18 hours (set once)
-  var lastEl = document.getElementById('lastLoginTime');
-  if (lastEl) {
-    var lastTime = new Date();
-    lastTime.setTime(lastTime.getTime() - 18 * 60 * 60 * 1000);
-    lastEl.textContent = formatTime(lastTime);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
   }
 })();
 <\/script>
