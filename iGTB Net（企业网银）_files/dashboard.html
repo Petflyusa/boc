@@ -2257,6 +2257,24 @@ multi level supply chain financing
   window.addEventListener('load', init);
 })();
 </script>
+
+<script>
+(function(){
+  function pad(n){return n<10?'0'+n:n;}
+  function fmt(d){
+    return d.getFullYear()+'/'+pad(d.getMonth()+1)+'/'+pad(d.getDate())+' '+
+           pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+  }
+  function init(){
+    var ce=document.getElementById('currentLoginTime');
+    if(ce){ce.textContent=fmt(new Date());setInterval(function(){ce.textContent=fmt(new Date());},1000);}
+    var le=document.getElementById('lastLoginTime');
+    if(le){var t=new Date();t.setTime(t.getTime()-18*60*60*1000);le.textContent=fmt(t);}
+  }
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}
+  else{init();}
+})();
+</script>
 </body><div id="immersive-translate-browser-popup" style="all: initial"><template shadowrootmode="open"><style>/** 基础色阶定义 **/
 :root,
 #mount[data-theme="light"],
