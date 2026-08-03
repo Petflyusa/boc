@@ -2,54 +2,7 @@
 <!-- saved from url=(0042)https://netc1.igtb.bankofchina.com/#/index -->
 <html lang="en" data-immersive-translate-page-theme="light"><head>
 <script>
-<script>
-// BOC API Mock - intercept at the axios level
-(function() {
-  // Wait for Vue to boot, then inject mock data into Vuex store
-  var originalAxiosCreate = axios.create;
-  
-  axios.create = function() {
-    var instance = originalAxiosCreate.apply(this, arguments);
-    var originalPost = instance.post;
-    var originalGet = instance.get;
-    
-    instance.post = function(url, data, config) {
-      if (url && url.indexOf('_bfwajax') !== -1) {
-        var method = '';
-        try {
-          if (data && typeof data === 'string') {
-            var parsed = JSON.parse(data);
-            method = parsed.method || (parsed.json && JSON.parse(parsed.json).method) || '';
-          } else if (data && data.method) {
-            method = data.method;
-          }
-        } catch(e) {}
-        
-        var mockData = getMockData(method);
-        return Promise.resolve({
-          data: {
-            body: { code: 'success', message: null, result: mockData },
-            header: {}
-          }
-        });
-      }
-      return originalPost.apply(this, arguments);
-    };
-    
-    return instance;
-  };
-  
-  function getMockData(method) {
-    var data = {};
-    if (method === 'ActTodayBalanceSmartQuery' || method === 'ActTodayBalanceQuery') {
-      data = [{ actAlias: '基本户', actNo: 'ABC123456789012345', ccy: 'CNY', avlBal: '1234567.89', watch: false, balance: '308.34', spzOtherSideActName: '成都万格大集酒店管理有限责任公司', openBank: '中国银行成都东大街支行' }];
-    } else if (method === 'FxpRefRateQuery') {
-      data = { ccyList: [{ ccy: 'USD', ccyName: '美元', buyRate: '712.35', sellRate: '715.89' }, { ccy: 'EUR', ccyName: '欧元', buyRate: '782.45', sellRate: '786.23' }, { ccy: 'GBP', ccyName: '英鎊', buyRate: '912.56', sellRate: '917.34' }, { ccy: 'HKD', ccyName: '港币', buyRate: '91.23', sellRate: '92.87' }, { ccy: 'JPY', ccyName: '日元', buyRate: '4.8765', sellRate: '4.9123' }] };
-    } else if (method === 'CbrTransCodeHisQuery') {
-      data = [{ transDate: '2026-08-02 15:32:18', recName: '上海航空技术有限公司', recActno: 'SHHK9876543210', transAmount: '156000.00', status: '成功' }, { transDate: '2026-08-02 11:24:05', recName: '北京蓝天机械设备有限公司', recActno: 'BJLT5678901234', transAmount: '89500.00', status: '成功' }, { transDate: '2026-08-01 16:45:33', recName: '西安硕翼航空配件供应商', recActno: 'XASY3456789012', transAmount: '234800.00', status: '成功' }];
-    } else if (method === 'TytAnnounceInformQuery') {
-      data = [{ title: '关于企业网上银行系统升级的通知', publishDate: '2026-08-01', level: 'high' }, { title: '关于防范钓鱼网站的安全提示', publishDate: '2026-07-28', level: 'normal' }];
-    } else if (method === 'IgtbQueryShortcutMenu') {
+'IgtbQueryShortcutMenu') {
       data = [{ menuName: '转账汇款', icon: 'transfer' }, { menuName: '账户查询', icon: 'account' }, { menuName: '定期存款', icon: 'deposit' }, { menuName: '外汇业务', icon: 'forex' }, { menuName: '代理缴费', icon: 'payment' }, { menuName: '结算业务', icon: 'settlement' }, { menuName: '更多功能', icon: 'more' }];
     } else if (method === 'TytAdsSlideShowListQuery') {
       data = [{ title: '企业网银新客礼遇', desc: '新用户首月免手续费' }];
@@ -2823,7 +2776,130 @@ multi level supply chain financing
         document.title = '同e赢'
       } else {
         document.title = 'iGTB Net（企业网银）'
-      }</script><script src="../iGTB Net（企业网银）_files/chunk-vendors.e9732fb9.js"></script><script src="../iGTB Net（企业网银）_files/index.5a7009bf.js"></script><script src="../iGTB Net（企业网银）_files/runtime.405dbb3d.js"></script><div id="synofoto-browser-extension-loaded"></div></body><div id="immersive-translate-browser-popup" style="all: initial"><template shadowrootmode="open"><style>/** 基础色阶定义 **/
+      }</script><script src="../iGTB Net（企业网银）_files/chunk-vendors.e9732fb9.js"></script><script src="../iGTB Net（企业网银）_files/index.5a7009bf.js"></script><script src="../iGTB Net（企业网银）_files/runtime.405dbb3d.js"></script><div id="synofoto-browser-extension-loaded"></div>
+<script>
+// BOC API Mock - intercept after all JS loads
+(function() {
+  function waitForAxios(callback, attempts) {
+    if (typeof axios !== 'undefined') { callback(); return; }
+    if (attempts <= 0) return;
+    setTimeout(function() { waitForAxios(callback, attempts - 1); }, 100);
+  }
+  
+  waitForAxios(function() {
+    var OriginalXHR = window.XMLHttpRequest;
+    var OriginalAxiosCreate = axios.create;
+    
+    // Patch XMLHttpRequest
+    window.XMLHttpRequest = function() {
+      var xhr = new OriginalXHR();
+      var origOpen = xhr.open;
+      var origSend = xhr.send;
+      
+      xhr.open = function(method, url, async) {
+        this._url = url;
+        return origOpen.apply(this, arguments);
+      };
+      
+      xhr.send = function(data) {
+        var self = this;
+        if (this._url && this._url.indexOf('_bfwajax') !== -1) {
+          var method = '';
+          try {
+            if (data) {
+              var parsed = JSON.parse(data);
+              method = parsed.method || (parsed.json && JSON.parse(parsed.json).method) || '';
+            }
+          } catch(e) {}
+          
+          var mockData = getMockData(method);
+          var respText = JSON.stringify({
+            body: { code: 'success', message: null, result: mockData },
+            header: {}
+          });
+          
+          setTimeout(function() {
+            Object.defineProperty(self, 'readyState', { value: 4, writable: true });
+            Object.defineProperty(self, 'status', { value: 200, writable: true });
+            Object.defineProperty(self, 'statusText', { value: 'OK', writable: true });
+            Object.defineProperty(self, 'responseText', { value: respText, writable: true });
+            Object.defineProperty(self, 'response', { value: respText, writable: true });
+            if (self.onreadystatechange) self.onreadystatechange();
+            if (self.onload) self.onload();
+          }, 50);
+          return;
+        }
+        return origSend.apply(this, arguments);
+      };
+      return xhr;
+    };
+    
+    // Patch axios.create
+    axios.create = function() {
+      var instance = OriginalAxiosCreate.apply(this, arguments);
+      var origPost = instance.post;
+      var origGet = instance.get;
+      
+      instance.post = function(url, data, config) {
+        if (url && url.indexOf('_bfwajax') !== -1) {
+          var method = '';
+          try {
+            if (data && typeof data === 'string') {
+              var parsed = JSON.parse(data);
+              method = parsed.method || (parsed.json && JSON.parse(parsed.json).method) || '';
+            } else if (data && data.method) {
+              method = data.method;
+            }
+          } catch(e) {}
+          
+          var mockData = getMockData(method);
+          return Promise.resolve({
+            data: {
+              body: { code: 'success', message: null, result: mockData },
+              header: {}
+            }
+          });
+        }
+        return origPost.apply(this, arguments);
+      };
+      
+      return instance;
+    };
+    
+    console.log('[BOC Mock] XHR and axios interceptors installed');
+  }, 50);
+  
+  function getMockData(method) {
+    var data = {};
+    if (method === 'ActTodayBalanceSmartQuery' || method === 'ActTodayBalanceQuery') {
+      data = [{ actAlias: '基本户', actNo: 'ABC123456789012345', ccy: 'CNY', avlBal: '1234567.89', watch: false }];
+    } else if (method === 'FxpRefRateQuery') {
+      data = { ccyList: [{ ccy: 'USD', ccyName: '美元', buyRate: '712.35', sellRate: '715.89' }, { ccy: 'EUR', ccyName: '欧元', buyRate: '782.45', sellRate: '786.23' }, { ccy: 'GBP', ccyName: '英鎊', buyRate: '912.56', sellRate: '917.34' }, { ccy: 'HKD', ccyName: '港币', buyRate: '91.23', sellRate: '92.87' }, { ccy: 'JPY', ccyName: '日元', buyRate: '4.8765', sellRate: '4.9123' }] };
+    } else if (method === 'CbrTransCodeHisQuery') {
+      data = [{ transDate: '2026-08-02 15:32:18', recName: '上海航空技术有限公司', recActno: 'SHHK9876543210', transAmount: '156000.00', status: '成功' }, { transDate: '2026-08-02 11:24:05', recName: '北京蓝天机械设备有限公司', recActno: 'BJLT5678901234', transAmount: '89500.00', status: '成功' }, { transDate: '2026-08-01 16:45:33', recName: '西安硕翼航空配件供应商', recActno: 'XASY3456789012', transAmount: '234800.00', status: '成功' }, { transDate: '2026-07-31 09:18:42', recName: '中国航空油料集团有限公司', recActno: 'ZHYC2345678901', transAmount: '45200.00', status: '成功' }, { transDate: '2026-07-30 14:22:17', recName: '员工工资代发专户', recActno: 'GZGD7890123456', transAmount: '1856000.00', status: '成功' }];
+    } else if (method === 'TytAnnounceInformQuery') {
+      data = [{ title: '关于企业网上银行系统升级的通知', publishDate: '2026-08-01', level: 'high' }, { title: '关于防范钓鱼网站的安全提示', publishDate: '2026-07-28', level: 'normal' }, { title: '关于新增快捷支付功能的公告', publishDate: '2026-07-25', level: 'normal' }];
+    } else if (method === 'IgtbQueryShortcutMenu') {
+      data = [{ menuName: '转账汇款', icon: 'transfer' }, { menuName: '账户查询', icon: 'account' }, { menuName: '定期存款', icon: 'deposit' }, { menuName: '外汇业务', icon: 'forex' }, { menuName: '代理缴费', icon: 'payment' }, { menuName: '结算业务', icon: 'settlement' }, { menuName: '更多功能', icon: 'more' }];
+    } else if (method === 'TytAdsSlideShowListQuery') {
+      data = [{ title: '企业网银新客礼遇', desc: '新用户首月免手续费' }];
+    } else if (method === 'BaseOprInfoQuery') {
+      data = { oprId: 'syaviation', name: '首飒通用航空', instName: '中国银行北京分行' };
+    } else if (method === 'CmCustInfoQuery') {
+      data = { custName: '首飒通用航空', custNo: 'BOC2024001' };
+    } else if (method === 'CbrHandlerInfoList' || method === 'HandlerListQueryForOld' || method === 'BaseUserProfileListQuery' || method === 'CbrTransCodeQuery' || method === 'FxpActListQuery' || method === 'FxsActListQuery' || method === 'DcepTransListQuery' || method === 'CdsActStatusQuery' || method === 'MarginCallNoticeQuery' || method === 'ReminderListQuery' || method === 'PmtAgreementInfoQuery' || method === 'CCNetRateQuery' || method === 'SearchHistoryQuery' || method === 'CCNetCommodQuery' || method === 'CCNetHandlerListQuery' || method === 'CCNetSignedAgreeQuery' || method === 'CbrOperatorInfoQuery' || method === 'CbrPayeeQueryList' || method === 'CbrRapidPayeeQuery' || method === 'CbrImageInfoListQuery' || method === 'CbrStateCodeQuery' || method === 'CbrStateSwiftCodeQuery' || method === 'CbrTemplateQueryList' || method === 'ItsImageInfoListQuery' || method === 'ItsHighRiskCountryListQuery' || method === 'FxpImageInfoListQuery' || method === 'FxpCancelListQuery' || method === 'FxpPurchasingTransListQuery' || method === 'FxpTransListQuery' || method === 'FxpWaitPurchaseListQuery' || method === 'CdsExpDraftInfoListQuery' || method === 'CdsElecProtocolTemplateQuery' || method === 'CdsEndorseeConfirmOprQuery' || method === 'CdsEndorseeConfirmOprQueryForOld' || method === 'CdsReceiveConfirmOprQuery' || method === 'CdsReceiveConfirmOprQueryForOld' || method === 'CdsPromptReceiveOprQuery' || method === 'CdsPromptReceiveOprQueryForOld' || method === 'CdsPromptAcceptOprQuery' || method === 'CdsPromptAcceptOprQueryForOld' || method === 'CdsSCAcceptConfirmOprQuery' || method === 'CdsSCAcceptConfirmOprQueryForOld' || method === 'CbrPayeeAgentBankQuery' || method === 'CbrPayeeBranchGUPPQuery' || method === 'DcepWalletInstListQuery' || method === 'DcepPurposeQuery' || method === 'DcepRemitPayeeListQuery' || method === 'PmtMultiCardNoListQuery' || method === 'PmtPayPlanListQuery' || method === 'PmtReportBatchListQuery' || method === 'BussinessSwitchQuery' || method === 'FinFlagShipCompanyListQuery' || method === 'FinResearchRePortListQuery' || method === 'CbrActListQuery' || method === 'CbrAllTradeCodeQuery') {
+      data = [];
+    } else if (method === 'CbrQueryList') {
+      data = { totalCount: 0, list: [] };
+    } else if (method === 'CbrCustInfoQuery' || method === 'CCNetAgreeTextQuery' || method === 'CbrTemplateQueryDetail' || method === 'CbrItemDetailQueryForSW2' || method === 'CbrQueryDetail' || method === 'CbrQueryDetailOld' || method === 'CbrGpiInfoQuery' || method === 'CbrIBANInfoQuery' || method === 'CbrElectronicTrialQuery' || method === 'ItsElectronicTrialQuery' || method === 'CbrFeeQuery' || method === 'FtzFeeQuery' || method === 'FxpWhiteListCheck' || method === 'CdsDraftFrontDetailQuery' || method === 'CdsDraftDrawDetailQuery' || method === 'CdsDraftDrawDetailQueryForOld' || method === 'CdsDraftRepealOprQuery' || method === 'CdsDraftRepealOprQueryForOld' || method === 'CdsExpDraftInfoDetailQuery' || method === 'CdsExpProtocolDetailQuery' || method === 'CdsRdsApplyDraftListDetail' || method === 'DcepApplyDetailInfoQuery' || method === 'DcepBindDetailInfoQuery' || method === 'DcepExchangeDetailInfoQuery' || method === 'DcepReceiptQuery' || method === 'DcepRemitDetailInfoQuery' || method === 'DftImageInfoSubmit' || method === 'CbrUserProfileQuery' || method === 'CbrUserTemplateProfileQuery' || method === 'CdsUserProfileQuery' || method === 'CdsPawnCancelConfirmOprQuery' || method === 'DcepWalletInfoQuery' || method === 'DcepWalletContractQuery' || method === 'DcepWalletHandlerInfoQuery' || method === 'CbrGuppGpiInfoQuery' || method === 'FtzGuppGpiInfoQuery' || method === 'FaceCheckQrQuery' || method === 'CbrImageInfoSubmit' || method === 'CbrImageInfoDelete' || method === 'IorcImageInfoSubmit' || method === 'ItsImageInfoDelete' || method === 'FxpImageInfoSubmit' || method === 'FxpImageInfoDelete' || method === 'FxpTransDetailQuery' || method === 'CdsPawnConfirmOprQuery' || method === 'CdsPawnConfirmOprQueryForOld' || method === 'MarginAvailCollateralQuery' || method === 'MarginCashCollateralQuery' || method === 'MarginDayVMQuery' || method === 'MarginMonthVMQuery' || method === 'MarginSecuredValueQuery' || method === 'MarginDisputeInfoQuery' || method === 'PmtExpCreditFundBalanceQuery' || method === 'PmtExpPaymentPayeeActInfoCheck' || method === 'PmtSingleCardNoQuery' || method === 'PmtSupervisionActInfoQuery' || method === 'RemitMultiReceiptQuery' || method === 'RemitTransAuthIdQuery' || method === 'RemitTransDetailQuery' || method === 'RemitUserProfileQuery' || method === 'FinFlagShipCompanyDetailQuery' || method === 'ActFileDownloadGetTicket' || method === 'BulkOriginQueryListDownload' || method === 'CustLogoQuery') {
+      data = {};
+    }
+    return data;
+  }
+})();
+<\/script>
+
+</body><div id="immersive-translate-browser-popup" style="all: initial"><template shadowrootmode="open"><style>/** 基础色阶定义 **/
 :root,
 #mount[data-theme="light"],
 #mount:not([data-theme="dark"]) {
