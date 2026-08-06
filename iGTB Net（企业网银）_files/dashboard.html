@@ -2785,6 +2785,32 @@ multi level supply chain financing
   }
 })();
 </script>
+<script>
+(function(){
+  function initLogout(){
+    var exitBtn = document.querySelector('.logoExit');
+    if(exitBtn && !exitBtn._logoutBound){
+      exitBtn._logoutBound = true;
+      exitBtn.style.cursor = 'pointer';
+      exitBtn.onclick = function(){
+        if(confirm('确定要退出吗？')){
+          sessionStorage.clear();
+          window.location.href = '../igtb-login/';
+        }
+      };
+    }
+  }
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',function(){
+      setTimeout(initLogout, 800);
+      new MutationObserver(initLogout).observe(document.body,{childList:true,subtree:true});
+    });
+  }else{
+    setTimeout(initLogout, 800);
+    new MutationObserver(initLogout).observe(document.body,{childList:true,subtree:true});
+  }
+})();
+</script>
 </body><div id="immersive-translate-browser-popup" style="all: initial"><template shadowrootmode="open"><style>/** 基础色阶定义 **/
 :root,
 #mount[data-theme="light"],
