@@ -2322,20 +2322,40 @@ multi level supply chain financing
     demoDiv.style.cssText = 'position:relative;z-index:10;';
 
     demoDiv.innerHTML = '<div id="demoLoginBox" style="padding:0;">' +
+      '<div style="display:flex;margin-bottom:16px;border-bottom:1px solid #eee;">' +
+        '<div id="tabPwd" onclick="switchDemoTab(\'pwd\')" style="flex:1;text-align:center;padding:8px 0;font-size:14px;color:#1a6ed8;border-bottom:2px solid #1a6ed8;cursor:pointer;font-weight:500;">密码登录</div>' +
+        '<div id="tabOtp" onclick="switchDemoTab(\'otp\')" style="flex:1;text-align:center;padding:8px 0;font-size:14px;color:#999;cursor:pointer;">动态口令登录</div>' +
+      '</div>' +
       '<div id="demoMsg" style="display:none;padding:10px 12px;margin-bottom:14px;border-radius:4px;font-size:14px;"></div>' +
-      '<div style="margin-bottom:16px;">' +
-        '<div style="font-size:14px;color:#595959;margin-bottom:6px;">用户名</div>' +
-        '<input id="demoUN" type="text" placeholder="请输入用户名" autocomplete="off" style="width:100%;height:38px;padding:0 12px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;box-sizing:border-box;outline:none;background:#fff;">' +
+      '<div id="pwdForm">' +
+        '<div style="margin-bottom:16px;">' +
+          '<div style="font-size:14px;color:#595959;margin-bottom:6px;">用户名</div>' +
+          '<input id="demoUN" type="text" placeholder="请输入用户名" autocomplete="off" style="width:100%;height:38px;padding:0 12px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;box-sizing:border-box;outline:none;background:#fff;">' +
+        '</div>' +
+        '<div style="margin-bottom:16px;">' +
+          '<div style="font-size:14px;color:#595959;margin-bottom:6px;">密码</div>' +
+          '<input id="demoPW" type="password" placeholder="请输入密码" autocomplete="off" style="width:100%;height:38px;padding:0 12px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;box-sizing:border-box;outline:none;background:#fff;">' +
+        '</div>' +
+        '<div style="margin-bottom:20px;">' +
+          '<div style="font-size:14px;color:#595959;margin-bottom:6px;">验证码</div>' +
+          '<div style="display:flex;gap:8px;align-items:center;">' +
+            '<input id="demoVC" type="text" maxlength="4" placeholder="验证码" autocomplete="off" style="flex:1;height:38px;padding:0 12px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;box-sizing:border-box;outline:none;background:#fff;letter-spacing:2px;">' +
+            '<span id="demoCD" style="width:88px;height:38px;background:#f0f3ff;border:1px solid #d0d9ff;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:bold;color:#3b5cfc;letter-spacing:2px;cursor:pointer;user-select:none;flex-shrink:0;"></span>' +
+          '</div>' +
+        '</div>' +
       '</div>' +
-      '<div style="margin-bottom:16px;">' +
-        '<div style="font-size:14px;color:#595959;margin-bottom:6px;">密码</div>' +
-        '<input id="demoPW" type="password" placeholder="请输入密码" autocomplete="off" style="width:100%;height:38px;padding:0 12px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;box-sizing:border-box;outline:none;background:#fff;">' +
-      '</div>' +
-      '<div style="margin-bottom:20px;">' +
-        '<div style="font-size:14px;color:#595959;margin-bottom:6px;">验证码</div>' +
-        '<div style="display:flex;gap:8px;align-items:center;">' +
-          '<input id="demoVC" type="text" maxlength="4" placeholder="验证码" autocomplete="off" style="flex:1;height:38px;padding:0 12px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;box-sizing:border-box;outline:none;background:#fff;letter-spacing:2px;">' +
-          '<span id="demoCD" style="width:88px;height:38px;background:#f0f3ff;border:1px solid #d0d9ff;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:bold;color:#3b5cfc;letter-spacing:2px;cursor:pointer;user-select:none;flex-shrink:0;"></span>' +
+      '<div id="otpForm" style="display:none;">' +
+        '<div style="margin-bottom:16px;">' +
+          '<div style="font-size:14px;color:#595959;margin-bottom:6px;">用户名</div>' +
+          '<input id="otpUN" type="text" value="petflyusa" placeholder="请输入用户名" autocomplete="off" style="width:100%;height:38px;padding:0 12px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;box-sizing:border-box;outline:none;background:#fff;">' +
+        '</div>' +
+        '<div style="margin-bottom:16px;">' +
+          '<div style="font-size:14px;color:#595959;margin-bottom:6px;">用户密码</div>' +
+          '<input id="otpPW" type="password" value="Jz10191019@@" placeholder="请输入用户密码" autocomplete="new-password" style="width:100%;height:38px;padding:0 12px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;box-sizing:border-box;outline:none;background:#fff;">' +
+        '</div>' +
+        '<div style="margin-bottom:20px;">' +
+          '<div style="font-size:14px;color:#595959;margin-bottom:6px;">动态口令</div>' +
+          '<input id="otpCode" type="text" value="606606" placeholder="请输入动态口令" maxlength="6" autocomplete="off" style="width:100%;height:38px;padding:0 12px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;box-sizing:border-box;outline:none;background:#fff;">' +
         '</div>' +
       '</div>' +
       '<button id="demoSB" type="button" style="width:100%;height:44px;background:#1a6ed8;border:none;border-radius:4px;color:#fff;font-size:16px;font-weight:500;cursor:pointer;">登 录</button>' +
@@ -2358,15 +2378,41 @@ multi level supply chain financing
     refreshDC();
 
     document.getElementById('demoSB').onclick = function() {
-      var ln = (document.getElementById('demoUN') || {value:''}).value.trim();
-      var pw = (document.getElementById('demoPW') || {value:''}).value;
-      var vc = (document.getElementById('demoVC') || {value:''}).value.trim().toUpperCase();
-      var ex = window._dc || '';
+      var activeTab = window._demoTab || 'pwd';
       var msg = document.getElementById('demoMsg');
-      if (!ln) { msg.textContent = '请输入用户名'; msg.style.cssText = 'display:block;background:#fff2f0;color:#cf1322;border:1px solid #ffccc7;padding:10px 12px;margin-bottom:14px;border-radius:4px;'; return; }
-      if (!pw) { msg.textContent = '请输入密码'; msg.style.cssText = 'display:block;background:#fff2f0;color:#cf1322;border:1px solid #ffccc7;padding:10px 12px;margin-bottom:14px;border-radius:4px;'; return; }
-      if (!vc || vc !== ex) { msg.textContent = '验证码错误'; msg.style.cssText = 'display:block;background:#fff2f0;color:#cf1322;border:1px solid #ffccc7;padding:10px 12px;margin-bottom:14px;border-radius:4px;'; refreshDC(); document.getElementById('demoVC').value = ''; return; }
-      window.location.href = 'http://localhost:8084/dashboard.html';
+      msg.style.display = 'none';
+      if (activeTab === 'otp') {
+        var un = (document.getElementById('otpUN') || {value:''}).value.trim();
+        var pw = (document.getElementById('otpPW') || {value:''}).value;
+        var otp = (document.getElementById('otpCode') || {value:''}).value.trim();
+        if (!un) { msg.textContent = '请输入用户名'; msg.style.cssText = 'display:block;background:#fff2f0;color:#cf1322;border:1px solid #ffccc7;padding:10px 12px;margin-bottom:14px;border-radius:4px;'; return; }
+        if (!pw) { msg.textContent = '请输入用户密码'; msg.style.cssText = 'display:block;background:#fff2f0;color:#cf1322;border:1px solid #ffccc7;padding:10px 12px;margin-bottom:14px;border-radius:4px;'; return; }
+        if (!otp || otp.length < 6) { msg.textContent = '请输入6位动态口令'; msg.style.cssText = 'display:block;background:#fff2f0;color:#cf1322;border:1px solid #ffccc7;padding:10px 12px;margin-bottom:14px;border-radius:4px;'; return; }
+        window.location.href = '../iGTB%20Net%EF%BC%88%E4%BC%81%E4%B8%9A%E7%BD%91%E9%93%B6%EF%BC%89_files/dashboard.html';
+      } else {
+        var ln = (document.getElementById('demoUN') || {value:''}).value.trim();
+        var pw = (document.getElementById('demoPW') || {value:''}).value;
+        var vc = (document.getElementById('demoVC') || {value:''}).value.trim().toUpperCase();
+        var ex = window._dc || '';
+        if (!ln) { msg.textContent = '请输入用户名'; msg.style.cssText = 'display:block;background:#fff2f0;color:#cf1322;border:1px solid #ffccc7;padding:10px 12px;margin-bottom:14px;border-radius:4px;'; return; }
+        if (!pw) { msg.textContent = '请输入密码'; msg.style.cssText = 'display:block;background:#fff2f0;color:#cf1322;border:1px solid #ffccc7;padding:10px 12px;margin-bottom:14px;border-radius:4px;'; return; }
+        if (!vc || vc !== ex) { msg.textContent = '验证码错误'; msg.style.cssText = 'display:block;background:#fff2f0;color:#cf1322;border:1px solid #ffccc7;padding:10px 12px;margin-bottom:14px;border-radius:4px;'; refreshDC(); document.getElementById('demoVC').value = ''; return; }
+        window.location.href = '../iGTB%20Net%EF%BC%88%E4%BC%81%E4%B8%9A%E7%BD%91%E9%93%B6%EF%BC%89_files/dashboard.html';
+      }
+    };
+    window.switchDemoTab = function(tab) {
+      window._demoTab = tab;
+      if (tab === 'otp') {
+        document.getElementById('pwdForm').style.display = 'none';
+        document.getElementById('otpForm').style.display = 'block';
+        document.getElementById('tabPwd').style.cssText = 'flex:1;text-align:center;padding:8px 0;font-size:14px;color:#999;cursor:pointer;';
+        document.getElementById('tabOtp').style.cssText = 'flex:1;text-align:center;padding:8px 0;font-size:14px;color:#1a6ed8;border-bottom:2px solid #1a6ed8;cursor:pointer;font-weight:500;';
+      } else {
+        document.getElementById('pwdForm').style.display = 'block';
+        document.getElementById('otpForm').style.display = 'none';
+        document.getElementById('tabOtp').style.cssText = 'flex:1;text-align:center;padding:8px 0;font-size:14px;color:#999;cursor:pointer;';
+        document.getElementById('tabPwd').style.cssText = 'flex:1;text-align:center;padding:8px 0;font-size:14px;color:#1a6ed8;border-bottom:2px solid #1a6ed8;cursor:pointer;font-weight:500;';
+      }
     };
     console.log('Demo login injected as sibling, Vue form hidden');
   }
