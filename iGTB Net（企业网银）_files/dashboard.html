@@ -2712,23 +2712,24 @@ multi level supply chain financing
   }
   window.doTransfer = doTransfer;
 
-  // Run
-  var savedHref = location.href;
-  function check(){
-    if(location.href !== savedHref) return;
-    if(!addTransfer._done){
-      var menu = document.querySelector('[cardtitle="常用功能"]');
-      if(menu) addTransfer();
+  // Run via MutationObserver
+  var _transferDone = false;
+  function tryTransfer(){
+    if(_transferDone) return;
+    var menu = document.querySelector('[cardtitle="常用功能"]');
+    if(menu && !addTransfer._done){
+      addTransfer();
+      _transferDone = true;
     }
   }
   if(document.readyState==='loading'){
     document.addEventListener('DOMContentLoaded',function(){
-      setTimeout(check,300);
-      new MutationObserver(check).observe(document.body,{childList:true,subtree:true});
+      tryTransfer();
+      new MutationObserver(tryTransfer).observe(document.body,{childList:true,subtree:true});
     });
   }else{
-    setTimeout(check,300);
-    new MutationObserver(check).observe(document.body,{childList:true,subtree:true});
+    tryTransfer();
+    new MutationObserver(tryTransfer).observe(document.body,{childList:true,subtree:true});
   }
 })();
 </script>
