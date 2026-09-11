@@ -6,6 +6,7 @@ const {
   formatFxRate,
   buildFxRows,
   FX_OVERLAY_SELECTORS,
+  FX_CARD_MARKER,
 } = require('../iGTB Net（企业网银）_files/dashboard-fx.js');
 
 test('provides the current-day FX display currencies with buy and sell rates', () => {
@@ -29,4 +30,9 @@ test('defines the legacy loading layers that must be hidden after rendering', ()
   assert.ok(FX_OVERLAY_SELECTORS.includes('.loadingP'));
   assert.ok(FX_OVERLAY_SELECTORS.includes('.loadingErr'));
   assert.ok(FX_OVERLAY_SELECTORS.includes('.noData'));
+  assert.ok(FX_OVERLAY_SELECTORS.includes('.dashboard-card__Loading'));
+});
+
+test('exposes a marker for persistent FX card ownership', () => {
+  assert.equal(FX_CARD_MARKER, 'boc-fx-static');
 });

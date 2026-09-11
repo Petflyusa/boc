@@ -5,7 +5,8 @@
   'use strict';
 
   var FX_DATA_DATE = '2026-09-11';
-  var FX_OVERLAY_SELECTORS = ['.loading', '.loadingP', '.loadingErr', '.noData'];
+  var FX_CARD_MARKER = 'boc-fx-static';
+  var FX_OVERLAY_SELECTORS = ['.dashboard-card__Loading', '.loading', '.loadingP', '.loadingErr', '.noData'];
   var FX_RATES = [
     { name: '美元', code: 'USD', buy: 669.82, sell: 671.83 },
     { name: '欧元', code: 'EUR', buy: 776.44, sell: 778.77 },
@@ -48,7 +49,9 @@
         overlay.style.display = 'none';
       });
     });
-    body.innerHTML = '<div class="list col-xs-12 boc-fx-static"><div class="title" style="padding:0 16px"><span class="redLine4">现汇</span><span class="boc-fx-source">数据日期：' + FX_DATA_DATE + '（仅供展示）</span></div><div class="content"><div class="boc-fx-table"><div class="subTittle clearfix"><div class="col-xs-5"><span>货币</span></div><div class="col-xs-4"><span>银行买入价</span></div><div class="col-xs-3"><span>银行卖出价</span></div></div>' + buildFxRows(FX_RATES) + '</div></div></div>';
+    if (!body.querySelector('.' + FX_CARD_MARKER)) {
+      body.innerHTML = '<div class="list col-xs-12 ' + FX_CARD_MARKER + '"><div class="title" style="padding:0 16px"><span class="redLine4">现汇</span><span class="boc-fx-source">数据日期：' + FX_DATA_DATE + '（仅供展示）</span></div><div class="content"><div class="boc-fx-table"><div class="subTittle clearfix"><div class="col-xs-5"><span>货币</span></div><div class="col-xs-4"><span>银行买入价</span></div><div class="col-xs-3"><span>银行卖出价</span></div></div>' + buildFxRows(FX_RATES) + '</div></div></div>';
+    }
     var refresh = card.querySelector('.refresh');
     if (refresh && !refresh.getAttribute('data-boc-fx-bound')) {
       refresh.setAttribute('data-boc-fx-bound', 'true');
@@ -70,7 +73,7 @@
     var boot = function () {
       if (renderFxCard()) return;
       var observer = new MutationObserver(function () {
-        if (renderFxCard()) observer.disconnect();
+      renderFxCard();
       });
       observer.observe(document.body, { childList: true, subtree: true });
     };
@@ -78,5 +81,5 @@
     else boot();
   }
 
-  return { FX_DATA_DATE: FX_DATA_DATE, FX_RATES: FX_RATES, FX_OVERLAY_SELECTORS: FX_OVERLAY_SELECTORS, formatFxRate: formatFxRate, buildFxRows: buildFxRows, renderFxCard: renderFxCard };
+  return { FX_DATA_DATE: FX_DATA_DATE, FX_RATES: FX_RATES, FX_OVERLAY_SELECTORS: FX_OVERLAY_SELECTORS, FX_CARD_MARKER: FX_CARD_MARKER, formatFxRate: formatFxRate, buildFxRows: buildFxRows, renderFxCard: renderFxCard };
 });
