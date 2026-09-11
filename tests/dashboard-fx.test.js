@@ -5,6 +5,7 @@ const {
   FX_RATES,
   formatFxRate,
   buildFxRows,
+  FX_OVERLAY_SELECTORS,
 } = require('../iGTB Net（企业网银）_files/dashboard-fx.js');
 
 test('provides the current-day FX display currencies with buy and sell rates', () => {
@@ -21,4 +22,11 @@ test('formats rates and builds escaped table rows', () => {
   assert.match(rows, /USD/);
   assert.match(rows, /669\.82/);
   assert.match(rows, /671\.83/);
+});
+
+test('defines the legacy loading layers that must be hidden after rendering', () => {
+  assert.ok(FX_OVERLAY_SELECTORS.includes('.loading'));
+  assert.ok(FX_OVERLAY_SELECTORS.includes('.loadingP'));
+  assert.ok(FX_OVERLAY_SELECTORS.includes('.loadingErr'));
+  assert.ok(FX_OVERLAY_SELECTORS.includes('.noData'));
 });

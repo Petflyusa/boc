@@ -5,6 +5,7 @@
   'use strict';
 
   var FX_DATA_DATE = '2026-09-11';
+  var FX_OVERLAY_SELECTORS = ['.loading', '.loadingP', '.loadingErr', '.noData'];
   var FX_RATES = [
     { name: '美元', code: 'USD', buy: 669.82, sell: 671.83 },
     { name: '欧元', code: 'EUR', buy: 776.44, sell: 778.77 },
@@ -42,6 +43,11 @@
     if (timestamp) timestamp.textContent = FX_DATA_DATE.replace(/-/g, '/') + ' 15:55:00';
     var body = card.querySelector('[data-cy="foreign-body"]') || card.querySelector('.body');
     if (!body) return false;
+    FX_OVERLAY_SELECTORS.forEach(function (selector) {
+      card.querySelectorAll(selector).forEach(function (overlay) {
+        overlay.style.display = 'none';
+      });
+    });
     body.innerHTML = '<div class="list col-xs-12 boc-fx-static"><div class="title" style="padding:0 16px"><span class="redLine4">现汇</span><span class="boc-fx-source">数据日期：' + FX_DATA_DATE + '（仅供展示）</span></div><div class="content"><div class="boc-fx-table"><div class="subTittle clearfix"><div class="col-xs-5"><span>货币</span></div><div class="col-xs-4"><span>银行买入价</span></div><div class="col-xs-3"><span>银行卖出价</span></div></div>' + buildFxRows(FX_RATES) + '</div></div></div>';
     var refresh = card.querySelector('.refresh');
     if (refresh && !refresh.getAttribute('data-boc-fx-bound')) {
@@ -72,5 +78,5 @@
     else boot();
   }
 
-  return { FX_DATA_DATE: FX_DATA_DATE, FX_RATES: FX_RATES, formatFxRate: formatFxRate, buildFxRows: buildFxRows, renderFxCard: renderFxCard };
+  return { FX_DATA_DATE: FX_DATA_DATE, FX_RATES: FX_RATES, FX_OVERLAY_SELECTORS: FX_OVERLAY_SELECTORS, formatFxRate: formatFxRate, buildFxRows: buildFxRows, renderFxCard: renderFxCard };
 });
