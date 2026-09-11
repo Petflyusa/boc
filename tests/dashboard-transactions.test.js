@@ -98,6 +98,8 @@ test('contains generated historical transactions without future dates', () => {
 test('uses the dashboard SVG icon structure for the transaction entry', () => {
   assert.match(transactionEntryMarkup, /class="iconSvg svg-icon"/);
   assert.match(transactionEntryMarkup, /width="40" height="40"/);
+  assert.match(transactionEntryMarkup, /data-v-10506728/);
+  assert.match(transactionEntryMarkup, /data-v-dffe8856/);
   assert.match(transactionEntryMarkup, /<use[^>]+#icon-query-center/);
   assert.match(transactionEntryMarkup, /icon_text.*交易记录/);
 });
