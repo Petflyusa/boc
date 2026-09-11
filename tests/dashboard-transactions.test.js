@@ -6,6 +6,7 @@ const {
   paginateTransactions,
   calculateInterestForPeriod,
   createInterestTransactions,
+  transactions: demoTransactions,
 } = require('../iGTB Net（企业网银）_files/dashboard-transactions.js');
 
 const transactions = [
@@ -63,6 +64,7 @@ test('creates quarterly interest entries on the 20th of quarter-end months', () 
   ], {
     from: '2026-07-01',
     to: '2026-09-10',
+    asOf: '2026-09-30',
     annualRate: 0.0005,
   });
 
@@ -71,4 +73,23 @@ test('creates quarterly interest entries on the 20th of quarter-end months', () 
   assert.equal(records[0].direction, 'in');
   assert.equal(records[0].note, '人民币活期存款季度结息');
   assert.ok(records[0].amount > 0);
+});
+
+test('does not create interest entries after the as-of date', () => {
+  const records = createInterestTransactions([
+    { date: '2026-08-04', balance: 1000000 },
+    { date: '2026-09-10', balance: 1200000 },
+  ], {
+    from: '2026-07-01',
+    to: '2026-09-10',
+    asOf: '2026-09-11',
+    annualRate: 0.0005,
+  });
+
+  assert.deepEqual(records, []);
+});
+
+test('contains generated historical transactions without future dates', () => {
+  assert.ok(demoTransactions.length > 24);
+  assert.ok(demoTransactions.every((item) => item.date <= '2026-09-11'));
 });

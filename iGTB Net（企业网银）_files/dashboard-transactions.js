@@ -58,6 +58,7 @@
   }
 
   var DEFAULT_ANNUAL_RATE = 0.0005;
+  var DEMO_AS_OF_DATE = '2026-09-11';
 
   function dateToIso(date) {
     return date.toISOString().slice(0, 10);
@@ -91,6 +92,8 @@
     if (!source.length) return [];
     var from = settings.from || source.reduce(function (min, item) { return item.date < min ? item.date : min; }, source[0].date);
     var to = settings.to || source.reduce(function (max, item) { return item.date > max ? item.date : max; }, source[0].date);
+    var asOf = settings.asOf || DEMO_AS_OF_DATE;
+    if (to > asOf) to = asOf;
     var rate = toNumber(settings.annualRate);
     if (rate === null) rate = DEFAULT_ANNUAL_RATE;
     var start = new Date(from + 'T00:00:00Z');
@@ -103,7 +106,7 @@
       var periodEnd = new Date(settlement.getTime());
       periodEnd.setUTCDate(19);
       var settlementDate = dateToIso(settlement);
-      if (settlementDate >= from && start <= end) {
+      if (settlementDate >= from && settlementDate <= asOf && start <= end) {
         var amount = calculateInterestForPeriod(source, dateToIso(start), dateToIso(periodEnd), rate);
         records.push({
           id: 'INT-' + settlementDate.replace(/-/g, ''),
@@ -149,6 +152,30 @@
     ['2026-08-08', '货款收款', 'in', '华北客户有限公司', 176900, '销售回款'],
     ['2026-08-06', '费用报销', 'out', '行政管理部', 2480, '办公费用'],
     ['2026-08-04', '转账汇款', 'out', '苏州精工制造', 93500, '原材料采购'],
+    ['2026-07-30', '货款收款', 'in', '华中客户有限公司', 154800, '销售回款'],
+    ['2026-07-25', '转账汇款', 'out', '武汉供应链服务', 46800, '供应商付款'],
+    ['2026-07-18', '费用报销', 'out', '行政管理部', 1860, '办公费用'],
+    ['2026-07-12', '资金归集', 'in', '集团资金池', 310000, '资金归集'],
+    ['2026-07-05', '工资发放', 'out', '本行代发工资', 83500, '7月工资'],
+    ['2026-06-28', '货款收款', 'in', '华南客户有限公司', 187600, '销售回款'],
+    ['2026-06-20', '转账汇款', 'out', '广州仓储中心', 52200, '仓储结算'],
+    ['2026-06-15', '结汇入账', 'in', 'BOC FX Settlement', 39820, '港币结汇'],
+    ['2026-06-08', '费用报销', 'out', '深圳服务中心', 3120, '差旅报销'],
+    ['2026-06-03', '资金归集', 'in', '集团资金池', 295000, '资金归集'],
+    ['2026-05-28', '货款收款', 'in', '华东客户有限公司', 162400, '销售回款'],
+    ['2026-05-20', '工资发放', 'out', '本行代发工资', 82100, '5月工资'],
+    ['2026-05-12', '转账汇款', 'out', '宁波海联实业', 73400, '原材料采购'],
+    ['2026-05-06', '手续费', 'out', '中国银行', 52, '跨行转账手续费'],
+    ['2026-04-26', '资金归集', 'in', '集团资金池', 280000, '资金归集'],
+    ['2026-04-18', '货款收款', 'in', '华北客户有限公司', 143900, '销售回款'],
+    ['2026-04-10', '费用报销', 'out', '财务共享中心', 4180, '咨询服务费'],
+    ['2026-04-02', '转账汇款', 'out', '北京云启供应链', 68900, '供应商付款'],
+    ['2026-03-20', '工资发放', 'out', '本行代发工资', 81800, '3月工资'],
+    ['2026-03-08', '货款收款', 'in', '华中客户有限公司', 132500, '销售回款'],
+    ['2026-02-21', '转账汇款', 'out', '天津港联物流', 46200, '物流结算'],
+    ['2026-02-12', '资金归集', 'in', '集团资金池', 265000, '资金归集'],
+    ['2026-01-20', '费用报销', 'out', '行政管理部', 2250, '办公费用'],
+    ['2026-01-08', '货款收款', 'in', '华东客户有限公司', 121800, '销售回款'],
   ].map(function (row, index) {
     return {
       id: 'TX' + String(index + 1).padStart(4, '0'),
@@ -166,10 +193,12 @@
   });
 
   TRANSACTIONS = TRANSACTIONS.concat(createInterestTransactions(TRANSACTIONS, {
-    from: '2026-07-01',
+    from: '2025-10-01',
     to: '2026-09-10',
+    asOf: DEMO_AS_OF_DATE,
     annualRate: DEFAULT_ANNUAL_RATE,
   }));
+  TRANSACTIONS = TRANSACTIONS.filter(function (item) { return item.date <= DEMO_AS_OF_DATE; });
 
   function formatMoney(value) {
     return Number(value).toLocaleString('zh-CN', { minimumFractionDigits: 2 });
@@ -285,6 +314,7 @@
     paginateTransactions: paginateTransactions,
     calculateInterestForPeriod: calculateInterestForPeriod,
     createInterestTransactions: createInterestTransactions,
+    asOfDate: DEMO_AS_OF_DATE,
     transactions: TRANSACTIONS,
   };
 });
