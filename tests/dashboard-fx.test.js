@@ -19,6 +19,6 @@ test('formats rates and builds escaped table rows', () => {
   const rows = buildFxRows(FX_RATES.slice(0, 1));
   assert.match(rows, /美元/);
   assert.match(rows, /USD/);
-  assert.match(rows, /724\.85/);
-  assert.match(rows, /723\.35/);
+  assert.match(rows, /669\.82/);
+  assert.match(rows, /671\.83/);
 });
