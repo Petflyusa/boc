@@ -57,6 +57,73 @@
     };
   }
 
+  var DEFAULT_ANNUAL_RATE = 0.0005;
+
+  function dateToIso(date) {
+    return date.toISOString().slice(0, 10);
+  }
+
+  function calculateInterestForPeriod(dailyBalances, from, to, annualRate) {
+    var rate = toNumber(annualRate);
+    if (rate === null) rate = DEFAULT_ANNUAL_RATE;
+    var balances = (dailyBalances || []).slice().sort(function (a, b) {
+      return a.date.localeCompare(b.date);
+    });
+    var balanceByDate = new Map();
+    balances.forEach(function (item) { balanceByDate.set(item.date, Number(item.balance) || 0); });
+    var firstBalance = balances.length ? Number(balances[0].balance) || 0 : 0;
+    var cursor = new Date(from + 'T00:00:00Z');
+    var end = new Date(to + 'T00:00:00Z');
+    var total = 0;
+    var lastBalance = firstBalance;
+    while (cursor <= end) {
+      var date = dateToIso(cursor);
+      if (balanceByDate.has(date)) lastBalance = balanceByDate.get(date);
+      total += lastBalance * rate / 360;
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+    return Math.round(total * 100) / 100;
+  }
+
+  function createInterestTransactions(transactions, options) {
+    var settings = options || {};
+    var source = (transactions || []).filter(function (item) { return item.type !== '季度结息'; });
+    if (!source.length) return [];
+    var from = settings.from || source.reduce(function (min, item) { return item.date < min ? item.date : min; }, source[0].date);
+    var to = settings.to || source.reduce(function (max, item) { return item.date > max ? item.date : max; }, source[0].date);
+    var rate = toNumber(settings.annualRate);
+    if (rate === null) rate = DEFAULT_ANNUAL_RATE;
+    var start = new Date(from + 'T00:00:00Z');
+    start.setUTCMonth(Math.floor(start.getUTCMonth() / 3) * 3, 1);
+    var end = new Date(to + 'T00:00:00Z');
+    var records = [];
+    while (start <= end) {
+      var settlement = new Date(start.getTime());
+      settlement.setUTCMonth(start.getUTCMonth() + 2, 20);
+      var periodEnd = new Date(settlement.getTime());
+      periodEnd.setUTCDate(19);
+      var settlementDate = dateToIso(settlement);
+      if (settlementDate >= from && start <= end) {
+        var amount = calculateInterestForPeriod(source, dateToIso(start), dateToIso(periodEnd), rate);
+        records.push({
+          id: 'INT-' + settlementDate.replace(/-/g, ''),
+          date: settlementDate,
+          time: '09:00',
+          type: '季度结息',
+          direction: 'in',
+          counterparty: '中国银行',
+          account: source[0].account || '621700001234',
+          amount: amount,
+          balance: source[source.length - 1].balance || 0,
+          status: '交易成功',
+          note: '人民币活期存款季度结息',
+        });
+      }
+      start.setUTCMonth(start.getUTCMonth() + 3, 1);
+    }
+    return records;
+  }
+
   var TRANSACTIONS = [
     ['2026-09-10', '转账汇款', 'out', '上海示例科技有限公司', 128000, '采购合同款'],
     ['2026-09-09', '工资发放', 'out', '本行代发工资', 86000, '9月工资'],
@@ -97,6 +164,12 @@
       note: row[5],
     };
   });
+
+  TRANSACTIONS = TRANSACTIONS.concat(createInterestTransactions(TRANSACTIONS, {
+    from: '2026-07-01',
+    to: '2026-09-10',
+    annualRate: DEFAULT_ANNUAL_RATE,
+  }));
 
   function formatMoney(value) {
     return Number(value).toLocaleString('zh-CN', { minimumFractionDigits: 2 });
@@ -146,7 +219,7 @@
       '<div class="boc-tx-filters">' +
       '<label class="boc-tx-field">开始日期<input id="bocTxFrom" type="date"></label>' +
       '<label class="boc-tx-field">结束日期<input id="bocTxTo" type="date"></label>' +
-      '<label class="boc-tx-field">交易类型<select id="bocTxType"><option value="all">全部类型</option><option>转账汇款</option><option>工资发放</option><option>货款收款</option><option>费用报销</option><option>资金归集</option><option>结汇入账</option><option>手续费</option></select></label>' +
+      '<label class="boc-tx-field">交易类型<select id="bocTxType"><option value="all">全部类型</option><option>转账汇款</option><option>工资发放</option><option>货款收款</option><option>费用报销</option><option>资金归集</option><option>结汇入账</option><option>手续费</option><option>季度结息</option></select></label>' +
       '<label class="boc-tx-field">收支方向<select id="bocTxDirection"><option value="all">全部</option><option value="in">收入</option><option value="out">支出</option></select></label>' +
       '<label class="boc-tx-field">最低金额<input id="bocTxMin" type="number" min="0" step="0.01" placeholder="不限"></label>' +
       '<label class="boc-tx-field">最高金额<input id="bocTxMax" type="number" min="0" step="0.01" placeholder="不限"></label>' +
@@ -210,6 +283,8 @@
   return {
     filterTransactions: filterTransactions,
     paginateTransactions: paginateTransactions,
+    calculateInterestForPeriod: calculateInterestForPeriod,
+    createInterestTransactions: createInterestTransactions,
     transactions: TRANSACTIONS,
   };
 });

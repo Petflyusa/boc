@@ -4,6 +4,8 @@ const assert = require('node:assert/strict');
 const {
   filterTransactions,
   paginateTransactions,
+  calculateInterestForPeriod,
+  createInterestTransactions,
 } = require('../iGTB Net（企业网银）_files/dashboard-transactions.js');
 
 const transactions = [
@@ -42,4 +44,31 @@ test('paginates filtered results with stable metadata', () => {
   assert.equal(result.pageSize, 2);
   assert.equal(result.total, 3);
   assert.equal(result.totalPages, 2);
+});
+
+test('calculates interest from each daily balance using a 360-day basis', () => {
+  const dailyBalances = [
+    { date: '2026-09-01', balance: 100000 },
+    { date: '2026-09-02', balance: 120000 },
+    { date: '2026-09-03', balance: 120000 },
+  ];
+
+  assert.equal(calculateInterestForPeriod(dailyBalances, '2026-09-01', '2026-09-03', 0.0005), 0.47);
+});
+
+test('creates quarterly interest entries on the 20th of quarter-end months', () => {
+  const records = createInterestTransactions([
+    { date: '2026-08-04', balance: 1000000 },
+    { date: '2026-09-10', balance: 1200000 },
+  ], {
+    from: '2026-07-01',
+    to: '2026-09-10',
+    annualRate: 0.0005,
+  });
+
+  assert.deepEqual(records.map((item) => item.date), ['2026-09-20']);
+  assert.equal(records[0].type, '季度结息');
+  assert.equal(records[0].direction, 'in');
+  assert.equal(records[0].note, '人民币活期存款季度结息');
+  assert.ok(records[0].amount > 0);
 });
