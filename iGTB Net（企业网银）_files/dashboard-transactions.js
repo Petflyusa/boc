@@ -59,6 +59,7 @@
 
   var DEFAULT_ANNUAL_RATE = 0.0005;
   var DEMO_AS_OF_DATE = '2026-09-11';
+  var transactionEntryMarkup = '<svg aria-hidden="true" class="iconSvg svg-icon" width="40" height="40" viewBox="0 0 40 40"><use xlink:href="#icon-query-center"></use></svg><div class="icon_text">交易记录</div>';
 
   function dateToIso(date) {
     return date.toISOString().slice(0, 10);
@@ -219,7 +220,7 @@
     entry.id = 'bocTransactionEntry';
     entry.className = 'menu-added_tip menu-added_wrapper col-xs-4 background-color';
     entry.title = '交易记录';
-    entry.innerHTML = '<span class="boc-transaction-entry-icon">▤</span><div class="icon_text">交易记录</div>';
+    entry.innerHTML = transactionEntryMarkup;
     entry.addEventListener('click', openModal);
     anchor.parentNode.insertBefore(entry, anchor.nextSibling);
     addStyles();
@@ -315,6 +316,7 @@
     calculateInterestForPeriod: calculateInterestForPeriod,
     createInterestTransactions: createInterestTransactions,
     asOfDate: DEMO_AS_OF_DATE,
+    transactionEntryMarkup: transactionEntryMarkup,
     transactions: TRANSACTIONS,
   };
 });

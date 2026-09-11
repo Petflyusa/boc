@@ -7,6 +7,7 @@ const {
   calculateInterestForPeriod,
   createInterestTransactions,
   transactions: demoTransactions,
+  transactionEntryMarkup,
 } = require('../iGTB Net（企业网银）_files/dashboard-transactions.js');
 
 const transactions = [
@@ -92,4 +93,11 @@ test('does not create interest entries after the as-of date', () => {
 test('contains generated historical transactions without future dates', () => {
   assert.ok(demoTransactions.length > 24);
   assert.ok(demoTransactions.every((item) => item.date <= '2026-09-11'));
+});
+
+test('uses the dashboard SVG icon structure for the transaction entry', () => {
+  assert.match(transactionEntryMarkup, /class="iconSvg svg-icon"/);
+  assert.match(transactionEntryMarkup, /width="40" height="40"/);
+  assert.match(transactionEntryMarkup, /<use[^>]+#icon-query-center/);
+  assert.match(transactionEntryMarkup, /icon_text.*交易记录/);
 });
