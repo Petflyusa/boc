@@ -9,6 +9,7 @@ const {
   reconcileTransactionBalances,
   transactions: demoTransactions,
   transactionEntryMarkup,
+  createTransactionPdf,
 } = require('../iGTB Net（企业网银）_files/dashboard-transactions.js');
 const {
   getRecentTransactions,
@@ -108,6 +109,17 @@ test('reconciles the latest transaction balance with the current account balance
 
   assert.equal(result.find((item) => item.id === 'latest').balance, 1000);
   assert.equal(result.find((item) => item.id === 'older').balance, 1040);
+});
+
+test('creates a downloadable PDF statement with an electronic seal marker', () => {
+  const pdf = createTransactionPdf([
+    { date: '2026-09-10', time: '09:18', type: '转账汇款', counterparty: '客户', amount: 1200, direction: 'out', balance: 1000, status: '交易成功' },
+  ], { account: '621700001234', currentBalance: 1000 });
+
+  assert.match(pdf, /^%PDF-1\.4/);
+  assert.match(pdf, /BOC ELECTRONIC SEAL/);
+  assert.match(pdf, /Transaction Detail Statement/);
+  assert.match(pdf, /%%EOF/);
 });
 
 test('uses the dashboard SVG icon structure for the transaction entry', () => {
