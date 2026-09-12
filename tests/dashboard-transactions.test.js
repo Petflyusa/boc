@@ -6,6 +6,7 @@ const {
   paginateTransactions,
   calculateInterestForPeriod,
   createInterestTransactions,
+  reconcileTransactionBalances,
   transactions: demoTransactions,
   transactionEntryMarkup,
 } = require('../iGTB Net（企业网银）_files/dashboard-transactions.js');
@@ -97,6 +98,16 @@ test('does not create interest entries after the as-of date', () => {
 test('contains generated historical transactions without future dates', () => {
   assert.ok(demoTransactions.length > 24);
   assert.ok(demoTransactions.every((item) => item.date <= '2026-09-11'));
+});
+
+test('reconciles the latest transaction balance with the current account balance', () => {
+  const result = reconcileTransactionBalances([
+    { id: 'older', date: '2026-09-09', time: '09:00', direction: 'in', amount: 100 },
+    { id: 'latest', date: '2026-09-10', time: '09:00', direction: 'out', amount: 40 },
+  ], 1000);
+
+  assert.equal(result.find((item) => item.id === 'latest').balance, 1000);
+  assert.equal(result.find((item) => item.id === 'older').balance, 1040);
 });
 
 test('uses the dashboard SVG icon structure for the transaction entry', () => {

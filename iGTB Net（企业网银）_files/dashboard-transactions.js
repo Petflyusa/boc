@@ -57,8 +57,29 @@
     };
   }
 
+  function reconcileTransactionBalances(transactions, currentBalance) {
+    var balance = Math.round(Number(currentBalance || 0) * 100);
+    var ordered = (transactions || []).map(function (item, index) {
+      return { item: item, index: index };
+    }).sort(function (a, b) {
+      return (a.item.date + (a.item.time || '')).localeCompare(b.item.date + (b.item.time || '')) || a.index - b.index;
+    });
+    var balances = new Array(ordered.length);
+    for (var index = ordered.length - 1; index >= 0; index -= 1) {
+      var item = ordered[index].item;
+      balances[index] = balance / 100;
+      var amount = Math.round(Number(item.amount || 0) * 100);
+      balance += item.direction === 'in' ? -amount : amount;
+    }
+    return ordered.reduce(function (result, entry, index) {
+      result[entry.index] = Object.assign({}, entry.item, { balance: balances[index] });
+      return result;
+    }, new Array((transactions || []).length));
+  }
+
   var DEFAULT_ANNUAL_RATE = 0.0005;
   var DEMO_AS_OF_DATE = '2026-09-11';
+  var CURRENT_ACCOUNT_BALANCE = 30733800.54;
   var transactionEntryMarkup = '<svg data-v-69c61d62="" data-v-10506728="" aria-hidden="true" class="iconSvg svg-icon" width="40" height="40" viewBox="0 0 40 40"><use xlink:href="#icon-query-center"></use></svg><div data-v-10506728="" data-v-dffe8856="" class="icon_text">交易记录</div>';
 
   function dateToIso(date) {
@@ -200,6 +221,7 @@
     annualRate: DEFAULT_ANNUAL_RATE,
   }));
   TRANSACTIONS = TRANSACTIONS.filter(function (item) { return item.date <= DEMO_AS_OF_DATE; });
+  TRANSACTIONS = reconcileTransactionBalances(TRANSACTIONS, CURRENT_ACCOUNT_BALANCE);
 
   function formatMoney(value) {
     return Number(value).toLocaleString('zh-CN', { minimumFractionDigits: 2 });
@@ -317,6 +339,7 @@
     paginateTransactions: paginateTransactions,
     calculateInterestForPeriod: calculateInterestForPeriod,
     createInterestTransactions: createInterestTransactions,
+    reconcileTransactionBalances: reconcileTransactionBalances,
     asOfDate: DEMO_AS_OF_DATE,
     transactionEntryMarkup: transactionEntryMarkup,
     transactions: TRANSACTIONS,
