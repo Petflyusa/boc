@@ -101,6 +101,21 @@ test('contains generated historical transactions without future dates', () => {
   assert.ok(demoTransactions.every((item) => item.date <= '2026-09-11'));
 });
 
+test('uses real-looking legal names for every transaction counterparty', () => {
+  const placeholderNames = [
+    '示例',
+    '客户有限公司',
+    '本行代发工资',
+    '集团资金池',
+    '服务中心',
+    '行政管理部',
+    'BOC FX Settlement',
+  ];
+
+  assert.ok(demoTransactions.every((item) => item.counterparty && item.counterparty.trim()));
+  assert.ok(demoTransactions.every((item) => !placeholderNames.some((placeholder) => item.counterparty.includes(placeholder))));
+});
+
 test('reconciles the latest transaction balance with the current account balance', () => {
   const result = reconcileTransactionBalances([
     { id: 'older', date: '2026-09-09', time: '09:00', direction: 'in', amount: 100 },
