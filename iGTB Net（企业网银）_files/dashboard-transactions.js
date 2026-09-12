@@ -57,6 +57,16 @@
     };
   }
 
+  function selectStatementTransactions(transactions, from, to) {
+    var start = from || '';
+    var end = to || '';
+    return (transactions || []).filter(function (item) {
+      return (!start || item.date >= start) && (!end || item.date <= end);
+    }).sort(function (a, b) {
+      return (b.date + (b.time || '')).localeCompare(a.date + (a.time || ''));
+    });
+  }
+
   function reconcileTransactionBalances(transactions, currentBalance) {
     var balance = Math.round(Number(currentBalance || 0) * 100);
     var ordered = (transactions || []).map(function (item, index) {
@@ -80,7 +90,7 @@
   function createTransactionPdf(transactions, options) {
     var settings = options || {};
     var rows = (transactions || []).slice();
-    var pageSize = 24;
+    var pageSize = 16;
     var pages = Math.max(1, Math.ceil(rows.length / pageSize));
     var objects = [];
     var addObject = function (value) { objects.push(value); return objects.length; };
@@ -90,46 +100,58 @@
         return char.charCodeAt(0).toString(16).padStart(4, '0');
       }).join('');
     };
-    var money = function (value) { return Number(value || 0).toFixed(2); };
+    var money = function (value) { return Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+    var shortName = function (value) {
+      var name = safe(value);
+      return name.length > 16 ? name.slice(0, 15) + '...' : name;
+    };
     var pageRefs = [];
     var fontRef = addObject('<< /Type /Font /Subtype /Type0 /BaseFont /STSong-Light /Encoding /UniGB-UCS2-H /DescendantFonts [DESCENDANT 0 R] >>');
     var descendantRef = addObject('<< /Type /Font /Subtype /CIDFontType0 /BaseFont /STSong-Light /CIDSystemInfo << /Registry (Adobe) /Ordering (GB1) /Supplement 4 >> /DW 1000 >>');
     objects[fontRef - 1] = objects[fontRef - 1].replace('DESCENDANT', String(descendantRef));
-    var stampFontRef = fontRef;
     for (var page = 0; page < pages; page += 1) {
       var content = [];
-      var text = function (x, y, size, value, font) {
-        content.push('BT /' + (font || 'F1') + ' ' + size + ' Tf ' + x + ' ' + y + ' Td <feff' + pdfText(value) + '> Tj ET');
+      var text = function (x, y, size, value, font, color) {
+        content.push((color || '0 0 0') + ' rg BT /' + (font || 'F1') + ' ' + size + ' Tf ' + x + ' ' + y + ' Td <' + pdfText(value) + '> Tj ET');
       };
-      content.push('0.75 0.75 0.75 RG 0.7 w 42 748 m 553 748 l S');
-      text(42, 775, 16, 'Bank of China | Corporate Banking', 'F2');
-      text(42, 756, 11, 'Transaction Detail Statement', 'F2');
-      text(42, 730, 9, 'Account: ' + safe(settings.account || '621700001234') + '    Currency: CNY    Current balance: ' + money(settings.currentBalance), 'F1');
-      text(42, 712, 8, 'Statement date: ' + safe(settings.asOfDate || DEMO_AS_OF_DATE) + '    Page ' + (page + 1) + ' / ' + pages, 'F1');
-      content.push('0.92 0.92 0.92 rg 42 686 553 20 re f');
-      text(48, 693, 8, 'Date / Time', 'F2'); text(125, 693, 8, 'Type / Counterparty', 'F2'); text(340, 693, 8, 'Amount', 'F2'); text(420, 693, 8, 'Balance', 'F2'); text(495, 693, 8, 'Status', 'F2');
+      content.push('0.78 0.05 0.05 rg 38 778 6 28 re f');
+      text(54, 790, 17, '中国银行股份有限公司', 'F2', '0.12 0.12 0.12');
+      text(54, 772, 11, '人民币账户交易明细', 'F2', '0.35 0.05 0.05');
+      text(54, 742, 9, '账号：' + safe(settings.account || '621700001234') + '    币种：人民币（CNY）', 'F1', '0.12 0.12 0.12');
+      text(54, 726, 9, '余额：' + money(settings.currentBalance) + '    期间：' + safe(settings.from || '') + ' 至 ' + safe(settings.to || ''), 'F1', '0.12 0.12 0.12');
+      text(54, 710, 8, '生成日期：' + safe(settings.asOfDate || DEMO_AS_OF_DATE) + '    第 ' + (page + 1) + ' / ' + pages + ' 页', 'F1', '0.35 0.35 0.35');
+      content.push('0.45 0.45 0.45 RG 0.7 w 42 696 m 553 696 l S');
+      content.push('0.92 0.93 0.95 rg 42 668 511 24 re f');
+      text(50, 676, 8, '交易日期', 'F2', '0.08 0.08 0.08');
+      text(122, 676, 8, '交易类型 / 对方户名', 'F2', '0.08 0.08 0.08');
+      text(350, 676, 8, '收支金额（元）', 'F2', '0.08 0.08 0.08');
+      text(438, 676, 8, '交易后余额', 'F2', '0.08 0.08 0.08');
+      text(520, 676, 8, '状态', 'F2', '0.08 0.08 0.08');
       var pageRows = rows.slice(page * pageSize, page * pageSize + pageSize);
       pageRows.forEach(function (item, index) {
-        var y = 670 - index * 22;
-        content.push('0.88 0.88 0.88 RG 42 ' + (y - 7) + ' m 595 ' + (y - 7) + ' l S');
-        text(48, y, 7, item.date + ' ' + (item.time || ''), 'F1');
-        text(125, y, 7, safe(item.type) + ' / ' + safe(item.counterparty), 'F1');
-        text(340, y, 7, (item.direction === 'in' ? '+' : '-') + money(item.amount), 'F1');
-        text(420, y, 7, money(item.balance), 'F1');
-        text(495, y, 7, safe(item.status || 'Success'), 'F1');
+        var y = 643 - index * 31;
+        if (index % 2 === 1) content.push('0.98 0.98 0.98 rg 42 ' + (y - 19) + ' 511 31 re f');
+        content.push('0.82 0.82 0.82 RG 0.45 w 42 ' + (y - 19) + ' m 553 ' + (y - 19) + ' l S');
+        text(50, y + 5, 7, item.date, 'F1', '0.08 0.08 0.08');
+        text(122, y + 5, 7, shortName(item.type), 'F1', '0.08 0.08 0.08');
+        text(122, y - 7, 7, shortName(item.counterparty), 'F1', '0.08 0.08 0.08');
+        text(350, y + 1, 7, (item.direction === 'in' ? '+' : '-') + money(item.amount), 'F1', item.direction === 'in' ? '0.65 0.05 0.05' : '0.08 0.35 0.18');
+        text(438, y + 1, 7, money(item.balance), 'F1', '0.08 0.08 0.08');
+        text(520, y + 1, 7, safe(item.status || '交易成功'), 'F1', '0.08 0.35 0.18');
       });
-      content.push('0.75 0.05 0.05 RG 1.2 w 490 92 m 542 92 l 542 144 m 542 144 l 490 144 l 490 92 l S');
-      text(498, 118, 8, 'BOC ELECTRONIC SEAL', 'F2');
-      text(42, 50, 7, 'This statement is generated electronically for demonstration. Electronic seal verification is represented visually.', 'F1');
+      content.push('0.70 0.03 0.03 RG 1.2 w 444 92 105 48 re S');
+      text(453, 122, 8, '电子印章', 'F2', '0.70 0.03 0.03');
+      text(453, 108, 6, 'BOC ELECTRONIC SEAL', 'F1', '0.70 0.03 0.03');
+      text(42, 48, 7, '本文件由演示系统生成，仅用于界面展示；电子印章为视觉标识，不代表真实数字签名。', 'F1', '0.35 0.35 0.35');
       var stream = content.join('\n');
       var streamRef = addObject('<< /Length ' + stream.length + ' >>\nstream\n' + stream + '\nendstream');
-      var pageRef = addObject('<< /Type /Page /Parent PAGES /MediaBox [0 0 595 842] /Resources << /Font << /F1 ' + fontRef + ' 0 R /F2 ' + stampFontRef + ' 0 R >> >> /Contents ' + streamRef + ' 0 R >>');
+      var pageRef = addObject('<< /Type /Page /Parent PAGES /MediaBox [0 0 595 842] /Resources << /Font << /F1 ' + fontRef + ' 0 R /F2 ' + fontRef + ' 0 R >> >> /Contents ' + streamRef + ' 0 R >>');
       pageRefs.push(pageRef);
     }
     var pagesRef = addObject('<< /Type /Pages /Kids [' + pageRefs.map(function (ref) { return ref + ' 0 R'; }).join(' ') + '] /Count ' + pageRefs.length + ' >>');
     objects = objects.map(function (object) { return object.replace(/PAGES/g, pagesRef + ' 0 R'); });
     var catalogRef = addObject('<< /Type /Catalog /Pages ' + pagesRef + ' 0 R >>');
-    var pdf = '%PDF-1.4\n% BOC ELECTRONIC SEAL | Transaction Detail Statement\n%âãÏÓ\n';
+    var pdf = '%PDF-1.4\n% BOC ELECTRONIC SEAL | Chinese Transaction Statement\n%BOC\n';
     var offsets = [0];
     objects.forEach(function (object, index) { offsets[index + 1] = pdf.length; pdf += (index + 1) + ' 0 obj\n' + object + '\nendobj\n'; });
     var xref = pdf.length;
@@ -317,7 +339,7 @@
     if (document.getElementById('bocTransactionStyles')) return;
     var style = document.createElement('style');
     style.id = 'bocTransactionStyles';
-    style.textContent = '#bocTransactionEntry{cursor:pointer!important}.boc-transaction-entry-icon{display:block;width:38px;height:38px;margin:0 auto 6px;border-radius:50%;background:#fff1f0;color:#c1282c;text-align:center;line-height:38px;font-size:22px}.boc-tx-modal{position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box}.boc-tx-panel{width:min(1080px,100%);max-height:calc(100vh - 48px);overflow:auto;background:#fff;border-radius:6px;box-shadow:0 10px 40px rgba(0,0,0,.2);font-family:"PingFang SC","Microsoft YaHei",Arial,sans-serif;color:#262626}.boc-tx-head{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid #f0f0f0}.boc-tx-title{font-size:18px;font-weight:600}.boc-tx-close{border:0;background:transparent;color:#999;font-size:24px;line-height:1;cursor:pointer}.boc-tx-filters{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:14px;padding:18px 24px;background:#fafafa;border-bottom:1px solid #f0f0f0}.boc-tx-field{display:flex;flex-direction:column;gap:6px;font-size:12px;color:#666}.boc-tx-field input,.boc-tx-field select{height:34px;border:1px solid #d9d9d9;border-radius:3px;padding:0 9px;background:#fff;color:#262626;box-sizing:border-box}.boc-tx-actions{display:flex;align-items:end;gap:8px}.boc-tx-btn{height:34px;padding:0 16px;border-radius:3px;border:1px solid #d9d9d9;background:#fff;color:#555;cursor:pointer}.boc-tx-btn.primary{background:#c1282c;border-color:#c1282c;color:#fff}.boc-tx-summary{display:flex;gap:28px;padding:16px 24px 10px;font-size:13px;color:#666}.boc-tx-summary strong{color:#c1282c;font-size:16px}.boc-tx-table-wrap{padding:0 24px 18px;overflow-x:auto}.boc-tx-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}.boc-tx-table th{background:#fafafa;color:#666;font-weight:500;text-align:left}.boc-tx-table th,.boc-tx-table td{padding:12px 10px;border-bottom:1px solid #f0f0f0}.boc-tx-table td.amount-in{color:#c1282c}.boc-tx-table td.amount-out{color:#388e3c}.boc-tx-status{color:#52a157}.boc-tx-empty{text-align:center;color:#999;padding:48px 0!important}.boc-tx-pagination{display:flex;justify-content:flex-end;align-items:center;gap:10px;padding:0 24px 22px;color:#666;font-size:13px}.boc-tx-page-btn{border:1px solid #d9d9d9;background:#fff;border-radius:3px;padding:5px 10px;cursor:pointer}.boc-tx-page-btn:disabled{color:#ccc;cursor:not-allowed}.boc-tx-download{color:#c1282c;text-decoration:none;font-size:13px;margin-left:8px}.boc-tx-download:hover{text-decoration:underline}@media(max-width:760px){.boc-tx-filters{grid-template-columns:repeat(2,minmax(120px,1fr));padding:14px}.boc-tx-head,.boc-tx-summary,.boc-tx-table-wrap,.boc-tx-pagination{padding-left:14px;padding-right:14px}.boc-tx-actions{grid-column:1/-1}}';
+    style.textContent = '#bocTransactionEntry{cursor:pointer!important}.boc-transaction-entry-icon{display:block;width:38px;height:38px;margin:0 auto 6px;border-radius:50%;background:#fff1f0;color:#c1282c;text-align:center;line-height:38px;font-size:22px}.boc-tx-modal{position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box}.boc-tx-panel{width:min(1080px,100%);max-height:calc(100vh - 48px);overflow:auto;background:#fff;border-radius:6px;box-shadow:0 10px 40px rgba(0,0,0,.2);font-family:"PingFang SC","Microsoft YaHei",Arial,sans-serif;color:#262626}.boc-tx-head{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid #f0f0f0}.boc-tx-title{font-size:18px;font-weight:600}.boc-tx-close{border:0;background:transparent;color:#999;font-size:24px;line-height:1;cursor:pointer}.boc-tx-filters{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:14px;padding:18px 24px;background:#fafafa;border-bottom:1px solid #f0f0f0}.boc-tx-field{display:flex;flex-direction:column;gap:6px;font-size:12px;color:#666}.boc-tx-field input,.boc-tx-field select{height:34px;border:1px solid #d9d9d9;border-radius:3px;padding:0 9px;background:#fff;color:#262626;box-sizing:border-box}.boc-tx-actions{display:flex;align-items:end;gap:8px}.boc-tx-btn{height:34px;padding:0 16px;border-radius:3px;border:1px solid #d9d9d9;background:#fff;color:#555;cursor:pointer}.boc-tx-btn.primary{background:#c1282c;border-color:#c1282c;color:#fff}.boc-tx-summary{display:flex;gap:28px;padding:16px 24px 10px;font-size:13px;color:#666}.boc-tx-summary strong{color:#c1282c;font-size:16px}.boc-tx-table-wrap{padding:0 24px 18px;overflow-x:auto}.boc-tx-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}.boc-tx-table th{background:#fafafa;color:#666;font-weight:500;text-align:left}.boc-tx-table th,.boc-tx-table td{padding:12px 10px;border-bottom:1px solid #f0f0f0}.boc-tx-table td.amount-in{color:#c1282c}.boc-tx-table td.amount-out{color:#388e3c}.boc-tx-status{color:#52a157}.boc-tx-empty{text-align:center;color:#999;padding:48px 0!important}.boc-tx-pagination{display:flex;justify-content:flex-end;align-items:center;gap:10px;padding:0 24px 22px;color:#666;font-size:13px}.boc-tx-page-btn{border:1px solid #d9d9d9;background:#fff;border-radius:3px;padding:5px 10px;cursor:pointer}.boc-tx-page-btn:disabled{color:#ccc;cursor:not-allowed}.boc-tx-download{color:#c1282c;text-decoration:none;font-size:13px;margin-left:8px}.boc-tx-download:hover{text-decoration:underline}.boc-pdf-modal{position:fixed;inset:0;z-index:100002;background:rgba(14,20,29,.68);display:flex;align-items:center;justify-content:center;padding:18px;box-sizing:border-box}.boc-pdf-panel{width:min(980px,100%);height:min(92vh,900px);background:#fff;border-radius:6px;display:flex;flex-direction:column;box-shadow:0 16px 50px rgba(0,0,0,.3)}.boc-pdf-toolbar{display:flex;align-items:end;gap:10px;padding:14px 18px;border-bottom:1px solid #e5e7eb;flex-wrap:wrap}.boc-pdf-toolbar .boc-tx-field{min-width:150px}.boc-pdf-frame{flex:1;border:0;background:#6b7280;min-height:360px}.boc-pdf-actions{display:flex;justify-content:flex-end;align-items:center;gap:12px;padding:12px 18px;border-top:1px solid #e5e7eb}.boc-pdf-count{margin-right:auto;color:#4b5563;font-size:13px}.boc-pdf-error{color:#b42318;font-size:13px;min-height:18px}@media(max-width:760px){.boc-tx-filters{grid-template-columns:repeat(2,minmax(120px,1fr));padding:14px}.boc-tx-head,.boc-tx-summary,.boc-tx-table-wrap,.boc-tx-pagination{padding-left:14px;padding-right:14px}.boc-tx-actions{grid-column:1/-1}.boc-pdf-toolbar{padding:12px}.boc-pdf-panel{height:96vh}.boc-pdf-actions{padding:10px 12px}}';
     document.head.appendChild(style);
   }
 
@@ -342,11 +364,52 @@
       '<label class="boc-tx-field">关键词<input id="bocTxKeyword" type="search" placeholder="类型、对方或用途"></label>' +
       '<div class="boc-tx-actions"><button id="bocTxReset" class="boc-tx-btn" type="button">重置</button><button id="bocTxSearch" class="boc-tx-btn primary" type="button">查询</button></div>' +
       '</div><div class="boc-tx-summary" id="bocTxSummary"></div><div class="boc-tx-table-wrap"><table class="boc-tx-table"><thead><tr><th>交易时间</th><th>交易类型</th><th>对方户名</th><th>账号尾号</th><th>收支金额（元）</th><th>余额（元）</th><th>状态</th></tr></thead><tbody id="bocTxRows"></tbody></table></div>' +
-      '<div class="boc-tx-pagination"><button id="bocTxPrev" class="boc-tx-page-btn" type="button">上一页</button><span id="bocTxPage"></span><button id="bocTxNext" class="boc-tx-page-btn" type="button">下一页</button><a id="bocTxDownload" class="boc-tx-download" href="#" download="BOC-transaction-statement.pdf">下载交易明细 PDF</a></div></section>';
+      '<div class="boc-tx-pagination"><button id="bocTxPrev" class="boc-tx-page-btn" type="button">上一页</button><span id="bocTxPage"></span><button id="bocTxNext" class="boc-tx-page-btn" type="button">下一页</button><a id="bocTxDownload" class="boc-tx-download" href="#">预览并下载中文 PDF</a></div></section>';
     document.body.appendChild(modal);
 
     var state = { page: 1, pageSize: 10, filters: { type: 'all', direction: 'all' } };
     var query = function (id) { return document.getElementById(id); };
+    var previewUrl = '';
+    var previewRows = [];
+    var openStatementPreview = function () {
+      var baseFilters = Object.assign({}, state.filters, { from: '', to: '' });
+      var baseRows = filterTransactions(TRANSACTIONS, baseFilters);
+      previewRows = baseRows;
+      var dates = baseRows.map(function (item) { return item.date; }).sort();
+      var preview = document.getElementById('bocPdfModal');
+      if (!preview) {
+        preview = document.createElement('div');
+        preview.id = 'bocPdfModal';
+        preview.className = 'boc-pdf-modal';
+        preview.innerHTML = '<section class="boc-pdf-panel" role="dialog" aria-modal="true" aria-label="交易明细 PDF 预览"><div class="boc-pdf-toolbar"><label class="boc-tx-field">下载开始日期<input id="bocPdfFrom" type="date"></label><label class="boc-tx-field">下载结束日期<input id="bocPdfTo" type="date"></label><button id="bocPdfGenerate" class="boc-tx-btn primary" type="button">生成预览</button><button id="bocPdfClose" class="boc-tx-btn" type="button">关闭</button><div id="bocPdfError" class="boc-pdf-error" role="alert"></div></div><iframe id="bocPdfFrame" class="boc-pdf-frame" title="中文交易明细 PDF 预览"></iframe><div class="boc-pdf-actions"><span id="bocPdfCount" class="boc-pdf-count">请选择日期区间</span><button id="bocPdfDownload" class="boc-tx-btn primary" type="button" disabled>确认下载 PDF</button></div></section>';
+        document.body.appendChild(preview);
+        document.getElementById('bocPdfClose').onclick = function () { preview.style.display = 'none'; };
+        document.getElementById('bocPdfGenerate').onclick = function () {
+          var from = document.getElementById('bocPdfFrom').value;
+          var to = document.getElementById('bocPdfTo').value;
+          var error = document.getElementById('bocPdfError');
+          if (!from || !to || from > to) { error.textContent = '请选择有效的开始和结束日期'; return; }
+          var selected = selectStatementTransactions(previewRows, from, to);
+          error.textContent = '';
+          if (previewUrl) URL.revokeObjectURL(previewUrl);
+          var pdf = createTransactionPdf(selected, { account: selected[0] && selected[0].account, currentBalance: CURRENT_ACCOUNT_BALANCE, asOfDate: DEMO_AS_OF_DATE, from: from, to: to });
+          previewUrl = URL.createObjectURL(new Blob([pdf], { type: 'application/pdf' }));
+          document.getElementById('bocPdfFrame').src = previewUrl;
+          document.getElementById('bocPdfCount').textContent = '预览 ' + selected.length + ' 笔交易，区间：' + from + ' 至 ' + to;
+          document.getElementById('bocPdfDownload').disabled = false;
+          document.getElementById('bocPdfDownload').onclick = function () {
+            var anchor = document.createElement('a');
+            anchor.href = previewUrl;
+            anchor.download = 'BOC-transaction-statement-' + from + '-' + to + '.pdf';
+            anchor.click();
+          };
+        };
+      }
+      document.getElementById('bocPdfFrom').value = state.filters.from || dates[0] || DEMO_AS_OF_DATE;
+      document.getElementById('bocPdfTo').value = state.filters.to || dates[dates.length - 1] || DEMO_AS_OF_DATE;
+      document.getElementById('bocPdfGenerate').click();
+      preview.style.display = 'flex';
+    };
     var render = function () {
       var filtered = filterTransactions(TRANSACTIONS, state.filters);
       var result = paginateTransactions(filtered, state.page, state.pageSize);
@@ -359,16 +422,7 @@
       query('bocTxPage').textContent = result.page + ' / ' + result.totalPages;
       query('bocTxPrev').disabled = result.page <= 1;
       query('bocTxNext').disabled = result.page >= result.totalPages;
-      query('bocTxDownload').onclick = function (event) {
-        event.preventDefault();
-        var blob = new Blob([createTransactionPdf(filtered, { account: filtered[0] && filtered[0].account, currentBalance: CURRENT_ACCOUNT_BALANCE, asOfDate: DEMO_AS_OF_DATE })], { type: 'application/pdf' });
-        var link = URL.createObjectURL(blob);
-        var anchor = document.createElement('a');
-        anchor.href = link;
-        anchor.download = 'BOC-transaction-statement-' + DEMO_AS_OF_DATE + '.pdf';
-        anchor.click();
-        setTimeout(function () { URL.revokeObjectURL(link); }, 1000);
-      };
+      query('bocTxDownload').onclick = function (event) { event.preventDefault(); openStatementPreview(); };
     };
     var readFilters = function () {
       state.filters = {
@@ -409,6 +463,7 @@
   return {
     filterTransactions: filterTransactions,
     paginateTransactions: paginateTransactions,
+    selectStatementTransactions: selectStatementTransactions,
     calculateInterestForPeriod: calculateInterestForPeriod,
     createInterestTransactions: createInterestTransactions,
     reconcileTransactionBalances: reconcileTransactionBalances,

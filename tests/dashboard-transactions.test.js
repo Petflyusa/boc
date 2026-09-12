@@ -10,6 +10,7 @@ const {
   transactions: demoTransactions,
   transactionEntryMarkup,
   createTransactionPdf,
+  selectStatementTransactions,
 } = require('../iGTB Net（企业网银）_files/dashboard-transactions.js');
 const {
   getRecentTransactions,
@@ -128,13 +129,26 @@ test('reconciles the latest transaction balance with the current account balance
 
 test('creates a downloadable PDF statement with an electronic seal marker', () => {
   const pdf = createTransactionPdf([
-    { date: '2026-09-10', time: '09:18', type: '转账汇款', counterparty: '客户', amount: 1200, direction: 'out', balance: 1000, status: '交易成功' },
-  ], { account: '621700001234', currentBalance: 1000 });
+    { date: '2026-09-10', time: '09:18', type: '转账汇款', counterparty: '上海寻梦信息技术有限公司', account: '621700001234', amount: 1200, direction: 'out', balance: 1000, status: '交易成功' },
+  ], { account: '621700001234', currentBalance: 1000, from: '2026-09-01', to: '2026-09-10' });
+
+  const utf16Hex = (value) => Array.from(value)
+    .map((character) => character.charCodeAt(0).toString(16).padStart(4, '0'))
+    .join('');
 
   assert.match(pdf, /^%PDF-1\.4/);
   assert.match(pdf, /BOC ELECTRONIC SEAL/);
-  assert.match(pdf, /Transaction Detail Statement/);
+  assert.match(pdf, new RegExp(utf16Hex('中国银行股份有限公司')));
+  assert.match(pdf, new RegExp(utf16Hex('人民币账户交易明细')));
+  assert.match(pdf, new RegExp(utf16Hex('2026-09-01 至 2026-09-10')));
+  assert.match(pdf, new RegExp(utf16Hex('上海寻梦信息技术有限公司')));
   assert.match(pdf, /%%EOF/);
+});
+
+test('selects an inclusive date range for statement preview and download', () => {
+  const selected = selectStatementTransactions(transactions, '2026-09-09', '2026-09-10');
+
+  assert.deepEqual(selected.map((item) => item.id), ['1', '2']);
 });
 
 test('uses the dashboard SVG icon structure for the transaction entry', () => {
