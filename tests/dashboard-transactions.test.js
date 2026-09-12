@@ -9,6 +9,10 @@ const {
   transactions: demoTransactions,
   transactionEntryMarkup,
 } = require('../iGTB Net（企业网银）_files/dashboard-transactions.js');
+const {
+  getRecentTransactions,
+  buildRecentTransactionsTable,
+} = require('../iGTB Net（企业网银）_files/dashboard-recent-transactions.js');
 
 const transactions = [
   {
@@ -102,4 +106,22 @@ test('uses the dashboard SVG icon structure for the transaction entry', () => {
   assert.match(transactionEntryMarkup, /data-v-dffe8856/);
   assert.match(transactionEntryMarkup, /<use[^>]+#icon-query-center/);
   assert.match(transactionEntryMarkup, /icon_text.*交易记录/);
+});
+
+test('selects and sorts transactions from the previous seven days', () => {
+  const result = getRecentTransactions([
+    { id: 'old', date: '2026-09-03', time: '10:00', amount: 1 },
+    { id: 'newer', date: '2026-09-10', time: '12:00', amount: 2 },
+    { id: 'latest', date: '2026-09-11', time: '09:00', amount: 3 },
+  ], '2026-09-11', 7);
+  assert.deepEqual(result.map((item) => item.id), ['latest', 'newer']);
+});
+
+test('builds a recent transaction table with income and expense classes', () => {
+  const html = buildRecentTransactionsTable([
+    { date: '2026-09-11', time: '09:00', type: '货款收款', counterparty: '客户', amount: 1200, direction: 'in', balance: 10000 },
+  ]);
+  assert.match(html, /最近7天交易明细/);
+  assert.match(html, /boc-recent-income/);
+  assert.match(html, /货款收款/);
 });
