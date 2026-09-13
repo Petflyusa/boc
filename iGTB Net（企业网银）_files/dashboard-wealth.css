@@ -1,0 +1,89 @@
+/* Keep the saved dashboard's global resets out of the product layout. */
+[cardtitle="wealthManagement"] {
+  container-type: inline-size;
+  overflow: hidden !important;
+}
+[cardtitle="wealthManagement"] .dashboard-card__body {
+  box-sizing: border-box;
+  height: 100%;
+}
+[cardtitle="wealthManagement"] .loading {
+  position: static !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  width: 100% !important;
+  height: auto !important;
+  box-sizing: border-box;
+  padding: 16px 20px !important;
+  text-align: left;
+}
+[cardtitle="wealthManagement"] .loading > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 254px;
+  box-sizing: border-box;
+  padding: 16px !important;
+  margin: 0 !important;
+  border: 1px solid #e9e9ed !important;
+  border-radius: 10px !important;
+  background: linear-gradient(160deg, #fff 65%, #faf7f7) !important;
+}
+[cardtitle="wealthManagement"] .loading > div > div:first-child {
+  position: static !important;
+  align-self: flex-start;
+  padding: 3px 8px !important;
+  margin-bottom: 10px !important;
+  color: #b6202e !important;
+  background: #fcebed !important;
+  font-size: 11px !important;
+  line-height: 16px !important;
+}
+[cardtitle="wealthManagement"] .loading > div > div:nth-child(2) {
+  min-height: 40px;
+  padding: 0 !important;
+  margin-bottom: 8px !important;
+  font-size: 14px !important;
+  line-height: 22px !important;
+  overflow-wrap: anywhere;
+}
+[cardtitle="wealthManagement"] .loading > div > div:nth-child(3) {
+  gap: 6px !important;
+  margin-bottom: 8px !important;
+  line-height: 20px;
+}
+[cardtitle="wealthManagement"] .loading > div > div:nth-child(3) > span {
+  padding: 2px 6px !important;
+}
+[cardtitle="wealthManagement"] .loading > div > div:nth-child(3) > span:last-child {
+  flex-basis: 100%;
+  padding: 4px 0 0 !important;
+  color: #696969 !important;
+}
+[cardtitle="wealthManagement"] .loading > div > div:nth-child(4) {
+  margin-bottom: 8px !important;
+  line-height: 30px;
+}
+[cardtitle="wealthManagement"] .loading > div > div:nth-child(4) > span {
+  font-size: clamp(18px, 3.2cqi, 24px) !important;
+  color: #b92030 !important;
+  font-variant-numeric: tabular-nums;
+}
+[cardtitle="wealthManagement"] .loading > div > div:last-child {
+  margin-top: auto !important;
+  padding-top: 12px !important;
+  border-top: 1px solid #ececef;
+  font-size: 12px !important;
+  line-height: 19px !important;
+  color: #696969 !important;
+  overflow-wrap: anywhere;
+}
+@container (max-width: 520px) {
+  [cardtitle="wealthManagement"] .loading {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 16px !important;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+}
