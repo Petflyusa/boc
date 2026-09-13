@@ -122,9 +122,9 @@
       var creditTotal = pageRows.filter(function (item) { return item.direction === 'in'; }).reduce(function (sum, item) { return sum + item.amount; }, 0);
       var currentPageBalance = pageRows.length ? pageRows[pageRows.length - 1].balance : previousBalance;
 
-      content.push('0.63 0.03 0.03 RG 1.2 w 690 535 122 45 re S 0.63 0.03 0.03 RG 0.6 w 694 539 114 37 re S');
-      text(716, 560, 10, '演示专用章', 'F2', '0.63 0.03 0.03');
-      text(711, 545, 6, '非正式银行凭证', 'F1', '0.63 0.03 0.03');
+      text(30, 560, 14, '交易明细  页面效果预览', 'F1');
+      text(30, 540, 10, '生成数据，非正式银行凭证', 'F1');
+      text(650, 560, 10, '中国银行股份有限公司', 'F1');
       text(30, 510, 8, '账号  ' + safe(settings.account || ACCOUNT_NUMBER), 'F1');
       text(30, 499, 5.5, 'Account No.', 'F1', '0.3 0.3 0.3');
       text(190, 510, 8, '账户名称  ' + safe(settings.accountName || '成都万格大集酒店管理有限责任公司'), 'F1');
@@ -138,7 +138,6 @@
       text(465, 475, 7.5, '承前页余额  ' + money(previousBalance), 'F1'); text(465, 464, 5.5, 'Previous Page Balance', 'F1', '0.3 0.3 0.3');
       text(650, 475, 6.5, '截止日期 ' + compactDate(settings.to) + '  周期 自定义', 'F1');
       text(650, 464, 5, 'To(YYYYMMDD)  Custom Period', 'F1', '0.3 0.3 0.3');
-      text(286, 310, 26, '演示文件  非正式银行凭证', 'F1', '0.9 0.9 0.9');
 
       var columns = [24, 50, 100, 150, 200, 232, 437, 512, 587, 667, 757, 818];
       content.push('0.15 0.15 0.15 RG 0.7 w 24 444 m 818 444 l S 24 410 m 818 410 l S');
@@ -172,8 +171,8 @@
       text(215, totalY + 4, 6, '贷方合计 ' + money(creditTotal), 'F1');
       text(420, totalY + 4, 6, '本页余额 ' + money(currentPageBalance), 'F1');
       text(610, totalY + 4, 6, '本对账期末余额 ' + money(rows.length ? rows[rows.length - 1].balance : previousBalance), 'F1');
-      text(26, 40, 5.5, '说明：余额前标注“-”代表借方金额。本文件由演示系统生成，仅用于界面展示，不是银行出具的正式对账单。', 'F1', '0.28 0.28 0.28');
-      text(26, 27, 5, 'Demo only. This is not an official bank statement, electronic signature, or verifiable banking document.', 'F1', '0.4 0.4 0.4');
+      text(26, 40, 8, '页面效果预览，非银行正式凭证。交易数据由系统生成，仅用于界面展示。', 'F1');
+      text(26, 27, 5, 'Layout preview with generated data. Not an official bank statement.', 'F1', '0.3 0.3 0.3');
       var stream = content.join('\n');
       var streamRef = addObject('<< /Length ' + stream.length + ' >>\nstream\n' + stream + '\nendstream');
       var pageRef = addObject('<< /Type /Page /Parent PAGES /MediaBox [0 0 842 595] /Resources << /Font << /F1 ' + fontRef + ' 0 R /F2 ' + fontRef + ' 0 R >> >> /Contents ' + streamRef + ' 0 R >>');
@@ -182,7 +181,7 @@
     var pagesRef = addObject('<< /Type /Pages /Kids [' + pageRefs.map(function (ref) { return ref + ' 0 R'; }).join(' ') + '] /Count ' + pageRefs.length + ' >>');
     objects = objects.map(function (object) { return object.replace(/PAGES/g, pagesRef + ' 0 R'); });
     var catalogRef = addObject('<< /Type /Catalog /Pages ' + pagesRef + ' 0 R >>');
-    var pdf = '%PDF-1.4\n% DEMO ONLY | NOT AN OFFICIAL BANK STATEMENT\n%BOC-DEMO\n';
+    var pdf = '%PDF-1.4\n% LAYOUT PREVIEW | NOT AN OFFICIAL BANK STATEMENT\n';
     var offsets = [0];
     objects.forEach(function (object, index) { offsets[index + 1] = pdf.length; pdf += (index + 1) + ' 0 obj\n' + object + '\nendobj\n'; });
     var xref = pdf.length;
@@ -239,6 +238,8 @@
     if (rate === null) rate = DEFAULT_ANNUAL_RATE;
     var start = new Date(from + 'T00:00:00Z');
     start.setUTCDate(1);
+    start.setUTCMonth(Math.floor(start.getUTCMonth() / 3) * 3);
+    var periodStart = from;
     var end = new Date(to + 'T00:00:00Z');
     var records = [];
     var dailySource = source.slice();
@@ -247,27 +248,29 @@
     }
     while (start <= end) {
       var settlement = new Date(start.getTime());
+      settlement.setUTCMonth(settlement.getUTCMonth() + 2);
       settlement.setUTCDate(21);
       var periodEnd = new Date(settlement.getTime());
-      periodEnd.setUTCDate(19);
+      periodEnd.setUTCDate(20);
       var settlementDate = dateToIso(settlement);
       if (settlementDate >= from && settlementDate <= to && settlementDate <= asOf && start <= end) {
-        var amount = calculateInterestForPeriod(dailySource, dateToIso(start), dateToIso(periodEnd), rate);
+        var amount = calculateInterestForPeriod(dailySource, periodStart, dateToIso(periodEnd), rate);
         records.push({
           id: 'INT-' + settlementDate.replace(/-/g, ''),
           date: settlementDate,
           time: '09:00',
-          type: '月度结息',
+          type: '季度结息',
           direction: 'in',
           counterparty: '中国银行股份有限公司',
           account: source[0].account || ACCOUNT_NUMBER,
           amount: amount,
           balance: source[source.length - 1].balance || 0,
           status: '交易成功',
-          note: '人民币活期存款月度结息',
+          note: '人民币活期存款季度结息',
         });
       }
-      start.setUTCMonth(start.getUTCMonth() + 1, 1);
+      if (settlementDate >= from) periodStart = settlementDate;
+      start.setUTCMonth(start.getUTCMonth() + 3, 1);
     }
     return records;
   }
@@ -329,19 +332,20 @@
         amount: row[4], status: '交易成功', note: row[5], bank: row[6] || '',
       };
     }).filter(function (item) { return item.date <= asOfDate; });
-    for (var month = 1; month <= 12; month += 1) {
+    for (var month = 3; month <= 12; month += 3) {
       var settlementDate = '2026-' + String(month).padStart(2, '0') + '-21';
       if (settlementDate > asOfDate) break;
-      events.push({ id: 'INT-' + settlementDate.replace(/-/g, ''), date: settlementDate, time: '09:00', type: '月度结息', direction: 'in', counterparty: '中国银行股份有限公司', account: ACCOUNT_NUMBER, amount: 0, status: '交易成功', note: '人民币活期存款月度结息', bank: '中国银行' });
+      events.push({ id: 'INT-' + settlementDate.replace(/-/g, ''), date: settlementDate, time: '09:00', type: '季度结息', direction: 'in', counterparty: '中国银行股份有限公司', account: ACCOUNT_NUMBER, amount: 0, status: '交易成功', note: '人民币活期存款季度结息', bank: '中国银行' });
     }
     events.sort(function (a, b) { return (a.date + a.time).localeCompare(b.date + b.time); });
     var balance = Number(openingBalance);
     var balanceHistory = [{ date: '2026-01-01', balance: balance }];
+    var periodStart = '2026-01-01';
     events.forEach(function (item) {
-      if (item.type === '月度结息') {
-        var monthStart = item.date.slice(0, 8) + '01';
+      if (item.type === '季度结息') {
         var periodEnd = item.date.slice(0, 8) + '20';
-        item.amount = calculateInterestForPeriod(balanceHistory, monthStart, periodEnd, DEFAULT_ANNUAL_RATE);
+        item.amount = calculateInterestForPeriod(balanceHistory, periodStart, periodEnd, DEFAULT_ANNUAL_RATE);
+        periodStart = item.date;
       }
       balance += item.direction === 'in' ? item.amount : -item.amount;
       item.balance = Math.round(balance * 100) / 100;
@@ -403,7 +407,7 @@
       '<div class="boc-tx-filters">' +
       '<label class="boc-tx-field">开始日期<input id="bocTxFrom" type="date"></label>' +
       '<label class="boc-tx-field">结束日期<input id="bocTxTo" type="date"></label>' +
-      '<label class="boc-tx-field">交易类型<select id="bocTxType"><option value="all">全部类型</option><option>转账汇款</option><option>货款收款</option><option>投资款入账</option><option>费用报销</option><option>手续费</option><option>月度结息</option></select></label>' +
+      '<label class="boc-tx-field">交易类型<select id="bocTxType"><option value="all">全部类型</option><option>转账汇款</option><option>货款收款</option><option>投资款入账</option><option>费用报销</option><option>手续费</option><option>季度结息</option></select></label>' +
       '<label class="boc-tx-field">收支方向<select id="bocTxDirection"><option value="all">全部</option><option value="in">收入</option><option value="out">支出</option></select></label>' +
       '<label class="boc-tx-field">最低金额<input id="bocTxMin" type="number" min="0" step="0.01" placeholder="不限"></label>' +
       '<label class="boc-tx-field">最高金额<input id="bocTxMax" type="number" min="0" step="0.01" placeholder="不限"></label>' +
