@@ -1,5 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 
 const {
   filterTransactions,
@@ -11,6 +12,9 @@ const {
   transactionEntryMarkup,
   createTransactionPdf,
   selectStatementTransactions,
+  accountNumber,
+  openingBalance,
+  currentAccountBalance,
 } = require('../iGTB Net（企业网银）_files/dashboard-transactions.js');
 const {
   getRecentTransactions,
@@ -65,7 +69,16 @@ test('calculates interest from each daily balance using a 360-day basis', () => 
   assert.equal(calculateInterestForPeriod(dailyBalances, '2026-09-01', '2026-09-03', 0.0005), 0.47);
 });
 
-test('creates quarterly interest entries on the 20th of quarter-end months', () => {
+test('carries the prior closing balance into a new interest period', () => {
+  const interest = calculateInterestForPeriod([
+    { date: '2026-01-01', balance: 500 },
+    { date: '2026-01-31', balance: 1000 },
+  ], '2026-02-01', '2026-02-02', 0.36);
+
+  assert.equal(interest, 2);
+});
+
+test('creates monthly interest entries on the 21st', () => {
   const records = createInterestTransactions([
     { date: '2026-08-04', balance: 1000000 },
     { date: '2026-09-10', balance: 1200000 },
@@ -76,10 +89,10 @@ test('creates quarterly interest entries on the 20th of quarter-end months', () 
     annualRate: 0.0005,
   });
 
-  assert.deepEqual(records.map((item) => item.date), ['2026-09-20']);
-  assert.equal(records[0].type, '季度结息');
+  assert.deepEqual(records.map((item) => item.date), ['2026-07-21', '2026-08-21']);
+  assert.equal(records[0].type, '月度结息');
   assert.equal(records[0].direction, 'in');
-  assert.equal(records[0].note, '人民币活期存款季度结息');
+  assert.equal(records[0].note, '人民币活期存款月度结息');
   assert.ok(records[0].amount > 0);
 });
 
@@ -94,12 +107,13 @@ test('does not create interest entries after the as-of date', () => {
     annualRate: 0.0005,
   });
 
-  assert.deepEqual(records, []);
+  assert.deepEqual(records.map((item) => item.date), ['2026-07-21', '2026-08-21']);
+  assert.ok(records.every((item) => item.date <= '2026-09-11'));
 });
 
 test('contains generated historical transactions without future dates', () => {
   assert.ok(demoTransactions.length > 24);
-  assert.ok(demoTransactions.every((item) => item.date <= '2026-09-11'));
+  assert.ok(demoTransactions.every((item) => item.date <= '2026-09-12'));
 });
 
 test('uses real-looking legal names for every transaction counterparty', () => {
@@ -117,6 +131,61 @@ test('uses real-looking legal names for every transaction counterparty', () => {
   assert.ok(demoTransactions.every((item) => !placeholderNames.some((placeholder) => item.counterparty.includes(placeholder))));
 });
 
+test('uses the statement account number for every generated transaction', () => {
+  assert.equal(accountNumber, '115863604036');
+  assert.ok(demoTransactions.every((item) => item.account === accountNumber));
+});
+
+test('keeps the dashboard balance equal to the latest transaction balance', () => {
+  const dashboard = fs.readFileSync(require.resolve('../iGTB Net（企业网银）_files/dashboard.html'), 'utf8');
+  const formattedBalance = currentAccountBalance.toLocaleString('en-US', { minimumFractionDigits: 2 });
+
+  assert.equal(demoTransactions[0].balance, currentAccountBalance);
+  assert.ok(dashboard.includes(formattedBalance));
+});
+
+test('starts the 2026 statement from the requested opening balance', () => {
+  assert.equal(openingBalance, 730000);
+  assert.equal(Math.min(...demoTransactions.map((item) => item.balance)) > 0, true);
+  assert.equal(demoTransactions.map((item) => item.date).sort()[0], '2026-01-02');
+});
+
+test('generates five to ten transactions per completed month', () => {
+  const counts = demoTransactions.reduce((result, item) => {
+    if (item.type === '月度结息') return result;
+    const month = item.date.slice(0, 7);
+    result[month] = (result[month] || 0) + 1;
+    return result;
+  }, {});
+
+  assert.ok(Object.keys(counts).length >= 9);
+  assert.ok(Object.values(counts).every((count) => count >= 5 && count <= 10));
+});
+
+test('includes the June 25 investment transfer and monthly interest dates', () => {
+  const investment = demoTransactions.find((item) => item.date === '2026-06-25' && item.amount === 30000000);
+  assert.deepEqual({
+    direction: investment.direction,
+    counterparty: investment.counterparty,
+    note: investment.note,
+    bank: investment.bank,
+  }, { direction: 'in', counterparty: '刘佳', note: '项目期投资款项', bank: '中国银行' });
+
+  const interestDates = demoTransactions
+    .filter((item) => item.type === '月度结息')
+    .map((item) => item.date);
+  assert.ok(interestDates.includes('2026-01-21'));
+  assert.ok(interestDates.includes('2026-08-21'));
+  assert.ok(!interestDates.includes('2026-09-21'));
+});
+
+test('keeps ordinary amounts in range and counterparties local to Chengdu', () => {
+  const ordinary = demoTransactions.filter((item) => !['月度结息', '手续费', '投资款入账'].includes(item.type));
+
+  assert.ok(ordinary.every((item) => item.amount >= 500 && item.amount <= 10000));
+  assert.ok(ordinary.every((item) => item.counterparty.startsWith('成都')));
+});
+
 test('reconciles the latest transaction balance with the current account balance', () => {
   const result = reconcileTransactionBalances([
     { id: 'older', date: '2026-09-09', time: '09:00', direction: 'in', amount: 100 },
@@ -127,20 +196,25 @@ test('reconciles the latest transaction balance with the current account balance
   assert.equal(result.find((item) => item.id === 'older').balance, 1040);
 });
 
-test('creates a downloadable PDF statement with an electronic seal marker', () => {
+test('creates a landscape demo statement with a non-official stamp marker', () => {
   const pdf = createTransactionPdf([
     { date: '2026-09-10', time: '09:18', type: '转账汇款', counterparty: '上海寻梦信息技术有限公司', account: '621700001234', amount: 1200, direction: 'out', balance: 1000, status: '交易成功' },
-  ], { account: '621700001234', currentBalance: 1000, from: '2026-09-01', to: '2026-09-10' });
+  ], { account: '115863604036', accountName: '成都万格大集酒店管理有限责任公司', bankName: '中国银行成都东大街支行', currentBalance: 1000, from: '2026-09-01', to: '2026-09-10' });
 
   const utf16Hex = (value) => Array.from(value)
     .map((character) => character.charCodeAt(0).toString(16).padStart(4, '0'))
     .join('');
 
   assert.match(pdf, /^%PDF-1\.4/);
-  assert.match(pdf, /BOC ELECTRONIC SEAL/);
-  assert.match(pdf, new RegExp(utf16Hex('中国银行股份有限公司')));
-  assert.match(pdf, new RegExp(utf16Hex('人民币账户交易明细')));
-  assert.match(pdf, new RegExp(utf16Hex('2026-09-01 至 2026-09-10')));
+  assert.match(pdf, /\/MediaBox \[0 0 842 595\]/);
+  assert.match(pdf, new RegExp(utf16Hex('中国银行成都东大街支行')));
+  assert.match(pdf, new RegExp(utf16Hex('成都万格大集酒店管理有限责任公司')));
+  assert.match(pdf, new RegExp(utf16Hex('借方发生额')));
+  assert.match(pdf, new RegExp(utf16Hex('贷方发生额')));
+  assert.match(pdf, new RegExp(utf16Hex('演示专用章')));
+  assert.match(pdf, new RegExp(utf16Hex('非正式银行凭证')));
+  assert.match(pdf, new RegExp(utf16Hex('起始日期 20260901')));
+  assert.match(pdf, new RegExp(utf16Hex('截止日期 20260910')));
   assert.match(pdf, new RegExp(utf16Hex('上海寻梦信息技术有限公司')));
   assert.match(pdf, /%%EOF/);
 });

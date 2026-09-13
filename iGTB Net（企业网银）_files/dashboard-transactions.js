@@ -89,8 +89,10 @@
 
   function createTransactionPdf(transactions, options) {
     var settings = options || {};
-    var rows = (transactions || []).slice();
-    var pageSize = 16;
+    var rows = (transactions || []).slice().sort(function (a, b) {
+      return (a.date + (a.time || '')).localeCompare(b.date + (b.time || ''));
+    });
+    var pageSize = 15;
     var pages = Math.max(1, Math.ceil(rows.length / pageSize));
     var objects = [];
     var addObject = function (value) { objects.push(value); return objects.length; };
@@ -101,10 +103,9 @@
       }).join('');
     };
     var money = function (value) { return Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
-    var shortName = function (value) {
-      var name = safe(value);
-      return name.length > 16 ? name.slice(0, 15) + '...' : name;
-    };
+    var compactDate = function (value) { return safe(value).replace(/-/g, ''); };
+    var shorten = function (value, limit) { var text = safe(value); return text.length > limit ? text.slice(0, limit - 3) + '...' : text; };
+    var rightAlignedX = function (right, value, size) { return Math.max(0, right - 4 - safe(value).length * size); };
     var pageRefs = [];
     var fontRef = addObject('<< /Type /Font /Subtype /Type0 /BaseFont /STSong-Light /Encoding /UniGB-UCS2-H /DescendantFonts [DESCENDANT 0 R] >>');
     var descendantRef = addObject('<< /Type /Font /Subtype /CIDFontType0 /BaseFont /STSong-Light /CIDSystemInfo << /Registry (Adobe) /Ordering (GB1) /Supplement 4 >> /DW 1000 >>');
@@ -114,44 +115,74 @@
       var text = function (x, y, size, value, font, color) {
         content.push((color || '0 0 0') + ' rg BT /' + (font || 'F1') + ' ' + size + ' Tf ' + x + ' ' + y + ' Td <' + pdfText(value) + '> Tj ET');
       };
-      content.push('0.78 0.05 0.05 rg 38 778 6 28 re f');
-      text(54, 790, 17, '中国银行股份有限公司', 'F2', '0.12 0.12 0.12');
-      text(54, 772, 11, '人民币账户交易明细', 'F2', '0.35 0.05 0.05');
-      text(54, 742, 9, '账号：' + safe(settings.account || '621700001234') + '    币种：人民币（CNY）', 'F1', '0.12 0.12 0.12');
-      text(54, 726, 9, '余额：' + money(settings.currentBalance) + '    期间：' + safe(settings.from || '') + ' 至 ' + safe(settings.to || ''), 'F1', '0.12 0.12 0.12');
-      text(54, 710, 8, '生成日期：' + safe(settings.asOfDate || DEMO_AS_OF_DATE) + '    第 ' + (page + 1) + ' / ' + pages + ' 页', 'F1', '0.35 0.35 0.35');
-      content.push('0.45 0.45 0.45 RG 0.7 w 42 696 m 553 696 l S');
-      content.push('0.92 0.93 0.95 rg 42 668 511 24 re f');
-      text(50, 676, 8, '交易日期', 'F2', '0.08 0.08 0.08');
-      text(122, 676, 8, '交易类型 / 对方户名', 'F2', '0.08 0.08 0.08');
-      text(350, 676, 8, '收支金额（元）', 'F2', '0.08 0.08 0.08');
-      text(438, 676, 8, '交易后余额', 'F2', '0.08 0.08 0.08');
-      text(520, 676, 8, '状态', 'F2', '0.08 0.08 0.08');
       var pageRows = rows.slice(page * pageSize, page * pageSize + pageSize);
-      pageRows.forEach(function (item, index) {
-        var y = 643 - index * 31;
-        if (index % 2 === 1) content.push('0.98 0.98 0.98 rg 42 ' + (y - 19) + ' 511 31 re f');
-        content.push('0.82 0.82 0.82 RG 0.45 w 42 ' + (y - 19) + ' m 553 ' + (y - 19) + ' l S');
-        text(50, y + 5, 7, item.date, 'F1', '0.08 0.08 0.08');
-        text(122, y + 5, 7, shortName(item.type), 'F1', '0.08 0.08 0.08');
-        text(122, y - 7, 7, shortName(item.counterparty), 'F1', '0.08 0.08 0.08');
-        text(350, y + 1, 7, (item.direction === 'in' ? '+' : '-') + money(item.amount), 'F1', item.direction === 'in' ? '0.65 0.05 0.05' : '0.08 0.35 0.18');
-        text(438, y + 1, 7, money(item.balance), 'F1', '0.08 0.08 0.08');
-        text(520, y + 1, 7, safe(item.status || '交易成功'), 'F1', '0.08 0.35 0.18');
+      var first = pageRows[0];
+      var previousBalance = first ? first.balance + (first.direction === 'in' ? -first.amount : first.amount) : Number(settings.currentBalance || 0);
+      var debitTotal = pageRows.filter(function (item) { return item.direction === 'out'; }).reduce(function (sum, item) { return sum + item.amount; }, 0);
+      var creditTotal = pageRows.filter(function (item) { return item.direction === 'in'; }).reduce(function (sum, item) { return sum + item.amount; }, 0);
+      var currentPageBalance = pageRows.length ? pageRows[pageRows.length - 1].balance : previousBalance;
+
+      content.push('0.63 0.03 0.03 RG 1.2 w 690 535 122 45 re S 0.63 0.03 0.03 RG 0.6 w 694 539 114 37 re S');
+      text(716, 560, 10, '演示专用章', 'F2', '0.63 0.03 0.03');
+      text(711, 545, 6, '非正式银行凭证', 'F1', '0.63 0.03 0.03');
+      text(30, 510, 8, '账号  ' + safe(settings.account || ACCOUNT_NUMBER), 'F1');
+      text(30, 499, 5.5, 'Account No.', 'F1', '0.3 0.3 0.3');
+      text(190, 510, 8, '账户名称  ' + safe(settings.accountName || '成都万格大集酒店管理有限责任公司'), 'F1');
+      text(190, 499, 5.5, 'Account Name', 'F1', '0.3 0.3 0.3');
+      text(465, 510, 7.5, '开户行  ' + safe(settings.bankName || '中国银行成都东大街支行'), 'F1');
+      text(465, 499, 5.5, 'Bank Name', 'F1', '0.3 0.3 0.3');
+      text(650, 510, 6.5, '起始日期 ' + compactDate(settings.from) + '  第 ' + (page + 1) + '/' + pages + ' 页', 'F1');
+      text(650, 499, 5, 'From(YYYYMMDD)  Page ' + (page + 1) + ' of ' + pages, 'F1', '0.3 0.3 0.3');
+      text(30, 475, 8, '币种  人民币(CNY)', 'F1'); text(30, 464, 5.5, 'Currency', 'F1', '0.3 0.3 0.3');
+      text(190, 475, 8, '账户类型  单位人民币活期基本账户存款', 'F1'); text(190, 464, 5.5, 'Account Type', 'F1', '0.3 0.3 0.3');
+      text(465, 475, 7.5, '承前页余额  ' + money(previousBalance), 'F1'); text(465, 464, 5.5, 'Previous Page Balance', 'F1', '0.3 0.3 0.3');
+      text(650, 475, 6.5, '截止日期 ' + compactDate(settings.to) + '  周期 自定义', 'F1');
+      text(650, 464, 5, 'To(YYYYMMDD)  Custom Period', 'F1', '0.3 0.3 0.3');
+      text(286, 310, 26, '演示文件  非正式银行凭证', 'F1', '0.9 0.9 0.9');
+
+      var columns = [24, 50, 100, 150, 200, 232, 437, 512, 587, 667, 757, 818];
+      content.push('0.15 0.15 0.15 RG 0.7 w 24 444 m 818 444 l S 24 410 m 818 410 l S');
+      columns.forEach(function (x) { content.push('0.55 0.55 0.55 RG 0.35 w ' + x + ' 444 m ' + x + ' 410 l S'); });
+      [['序号', 'No.'], ['记账日', 'Bk.D.'], ['起息日', 'Val.D.'], ['交易类型', 'Type'], ['凭证', 'Vou.'], ['凭证号码/业务编号/用途/摘要', 'Vou. No./Trans. No./Details'], ['借方发生额', 'Debit Amount'], ['贷方发生额', 'Credit Amount'], ['余额', 'Balance'], ['机构/柜员/流水', 'Reference No.'], ['备注', 'Notes']].forEach(function (label, index) {
+        text(columns[index] + 3, 430, index === 5 ? 6 : 5.5, label[0], 'F1');
+        text(columns[index] + 3, 417, 5, label[1], 'F1', '0.3 0.3 0.3');
       });
-      content.push('0.70 0.03 0.03 RG 1.2 w 444 92 105 48 re S');
-      text(453, 122, 8, '电子印章', 'F2', '0.70 0.03 0.03');
-      text(453, 108, 6, 'BOC ELECTRONIC SEAL', 'F1', '0.70 0.03 0.03');
-      text(42, 48, 7, '本文件由演示系统生成，仅用于界面展示；电子印章为视觉标识，不代表真实数字签名。', 'F1', '0.35 0.35 0.35');
+      pageRows.forEach(function (item, index) {
+        var top = 410 - index * 20;
+        var y = top - 13;
+        if (index % 2 === 1) content.push('0.975 0.975 0.975 rg 24 ' + (top - 20) + ' 794 20 re f');
+        content.push('0.76 0.76 0.76 RG 0.3 w 24 ' + (top - 20) + ' m 818 ' + (top - 20) + ' l S');
+        text(29, y, 5.5, String(page * pageSize + index + 1), 'F1');
+        text(53, y, 5.5, compactDate(item.date).slice(4), 'F1');
+        text(103, y, 5.5, compactDate(item.date).slice(4), 'F1');
+        text(153, y, 5.5, shorten(item.type, 7), 'F1');
+        text(207, y, 5.5, item.type === '手续费' ? '收费' : '转账', 'F1');
+        text(235, y, 5.3, shorten(safe(item.counterparty) + ' / ' + safe(item.note) + (item.bank ? ' / ' + item.bank : ''), 35), 'F1');
+        var amountText = money(item.amount);
+        var balanceText = money(item.balance);
+        if (item.direction === 'out') text(rightAlignedX(512, amountText, 5.5), y, 5.5, amountText, 'F1');
+        if (item.direction === 'in') text(rightAlignedX(587, amountText, 5.5), y, 5.5, amountText, 'F1');
+        text(rightAlignedX(667, balanceText, 5.5), y, 5.5, balanceText, 'F1');
+        text(672, y, 5.2, 'BOC' + compactDate(item.date).slice(2) + safe(item.id).replace(/\D/g, '').slice(-4), 'F1');
+        text(762, y, 5.2, shorten(item.note, 9), 'F1');
+      });
+      var totalY = 410 - pageRows.length * 20 - 20;
+      content.push('0.15 0.15 0.15 RG 0.7 w 24 ' + (totalY + 16) + ' m 818 ' + (totalY + 16) + ' l S');
+      text(35, totalY + 4, 6, '借方合计 ' + money(debitTotal), 'F1');
+      text(215, totalY + 4, 6, '贷方合计 ' + money(creditTotal), 'F1');
+      text(420, totalY + 4, 6, '本页余额 ' + money(currentPageBalance), 'F1');
+      text(610, totalY + 4, 6, '本对账期末余额 ' + money(rows.length ? rows[rows.length - 1].balance : previousBalance), 'F1');
+      text(26, 40, 5.5, '说明：余额前标注“-”代表借方金额。本文件由演示系统生成，仅用于界面展示，不是银行出具的正式对账单。', 'F1', '0.28 0.28 0.28');
+      text(26, 27, 5, 'Demo only. This is not an official bank statement, electronic signature, or verifiable banking document.', 'F1', '0.4 0.4 0.4');
       var stream = content.join('\n');
       var streamRef = addObject('<< /Length ' + stream.length + ' >>\nstream\n' + stream + '\nendstream');
-      var pageRef = addObject('<< /Type /Page /Parent PAGES /MediaBox [0 0 595 842] /Resources << /Font << /F1 ' + fontRef + ' 0 R /F2 ' + fontRef + ' 0 R >> >> /Contents ' + streamRef + ' 0 R >>');
+      var pageRef = addObject('<< /Type /Page /Parent PAGES /MediaBox [0 0 842 595] /Resources << /Font << /F1 ' + fontRef + ' 0 R /F2 ' + fontRef + ' 0 R >> >> /Contents ' + streamRef + ' 0 R >>');
       pageRefs.push(pageRef);
     }
     var pagesRef = addObject('<< /Type /Pages /Kids [' + pageRefs.map(function (ref) { return ref + ' 0 R'; }).join(' ') + '] /Count ' + pageRefs.length + ' >>');
     objects = objects.map(function (object) { return object.replace(/PAGES/g, pagesRef + ' 0 R'); });
     var catalogRef = addObject('<< /Type /Catalog /Pages ' + pagesRef + ' 0 R >>');
-    var pdf = '%PDF-1.4\n% BOC ELECTRONIC SEAL | Chinese Transaction Statement\n%BOC\n';
+    var pdf = '%PDF-1.4\n% DEMO ONLY | NOT AN OFFICIAL BANK STATEMENT\n%BOC-DEMO\n';
     var offsets = [0];
     objects.forEach(function (object, index) { offsets[index + 1] = pdf.length; pdf += (index + 1) + ' 0 obj\n' + object + '\nendobj\n'; });
     var xref = pdf.length;
@@ -162,8 +193,10 @@
   }
 
   var DEFAULT_ANNUAL_RATE = 0.0005;
-  var DEMO_AS_OF_DATE = '2026-09-11';
-  var CURRENT_ACCOUNT_BALANCE = 30733800.54;
+  var DEMO_AS_OF_DATE = '2026-09-12';
+  var ACCOUNT_NUMBER = '115863604036';
+  var OPENING_BALANCE = 730000;
+  var CURRENT_ACCOUNT_BALANCE = OPENING_BALANCE;
   var transactionEntryMarkup = '<svg data-v-69c61d62="" data-v-10506728="" aria-hidden="true" class="iconSvg svg-icon" width="40" height="40" viewBox="0 0 40 40"><use xlink:href="#icon-query-center"></use></svg><div data-v-10506728="" data-v-dffe8856="" class="icon_text">交易记录</div>';
 
   function dateToIso(date) {
@@ -182,7 +215,9 @@
     var cursor = new Date(from + 'T00:00:00Z');
     var end = new Date(to + 'T00:00:00Z');
     var total = 0;
-    var lastBalance = firstBalance;
+    var lastBalance = balances.reduce(function (balance, item) {
+      return item.date < from ? Number(item.balance) || 0 : balance;
+    }, firstBalance);
     while (cursor <= end) {
       var date = dateToIso(cursor);
       if (balanceByDate.has(date)) lastBalance = balanceByDate.get(date);
@@ -194,7 +229,7 @@
 
   function createInterestTransactions(transactions, options) {
     var settings = options || {};
-    var source = (transactions || []).filter(function (item) { return item.type !== '季度结息'; });
+    var source = (transactions || []).filter(function (item) { return item.type !== '季度结息' && item.type !== '月度结息'; });
     if (!source.length) return [];
     var from = settings.from || source.reduce(function (min, item) { return item.date < min ? item.date : min; }, source[0].date);
     var to = settings.to || source.reduce(function (max, item) { return item.date > max ? item.date : max; }, source[0].date);
@@ -203,109 +238,120 @@
     var rate = toNumber(settings.annualRate);
     if (rate === null) rate = DEFAULT_ANNUAL_RATE;
     var start = new Date(from + 'T00:00:00Z');
-    start.setUTCMonth(Math.floor(start.getUTCMonth() / 3) * 3, 1);
+    start.setUTCDate(1);
     var end = new Date(to + 'T00:00:00Z');
     var records = [];
+    var dailySource = source.slice();
+    if (settings.openingBalance !== undefined) {
+      dailySource.unshift({ date: from, balance: Number(settings.openingBalance) || 0 });
+    }
     while (start <= end) {
       var settlement = new Date(start.getTime());
-      settlement.setUTCMonth(start.getUTCMonth() + 2, 20);
+      settlement.setUTCDate(21);
       var periodEnd = new Date(settlement.getTime());
       periodEnd.setUTCDate(19);
       var settlementDate = dateToIso(settlement);
-      if (settlementDate >= from && settlementDate <= asOf && start <= end) {
-        var amount = calculateInterestForPeriod(source, dateToIso(start), dateToIso(periodEnd), rate);
+      if (settlementDate >= from && settlementDate <= to && settlementDate <= asOf && start <= end) {
+        var amount = calculateInterestForPeriod(dailySource, dateToIso(start), dateToIso(periodEnd), rate);
         records.push({
           id: 'INT-' + settlementDate.replace(/-/g, ''),
           date: settlementDate,
           time: '09:00',
-          type: '季度结息',
+          type: '月度结息',
           direction: 'in',
           counterparty: '中国银行股份有限公司',
-          account: source[0].account || '621700001234',
+          account: source[0].account || ACCOUNT_NUMBER,
           amount: amount,
           balance: source[source.length - 1].balance || 0,
           status: '交易成功',
-          note: '人民币活期存款季度结息',
+          note: '人民币活期存款月度结息',
         });
       }
-      start.setUTCMonth(start.getUTCMonth() + 3, 1);
+      start.setUTCMonth(start.getUTCMonth() + 1, 1);
     }
     return records;
   }
 
-  var TRANSACTIONS = [
-    ['2026-09-10', '转账汇款', 'out', '上海寻梦信息技术有限公司', 128000, '采购合同款'],
-    ['2026-09-09', '工资发放', 'out', '上海外服（集团）有限公司', 86000, '9月工资'],
-    ['2026-09-08', '货款收款', 'in', '华为技术有限公司', 238500, '销售回款'],
-    ['2026-09-07', '费用报销', 'out', '顺丰速运有限公司', 3680, '差旅报销'],
-    ['2026-09-05', '资金归集', 'in', '美的集团股份有限公司', 500000, '资金归集'],
-    ['2026-09-04', '结汇入账', 'in', '中国银行股份有限公司上海市分行', 42680, '美元结汇'],
-    ['2026-09-03', '转账汇款', 'out', '京东物流供应链有限公司', 75600, '供应商付款'],
-    ['2026-09-02', '手续费', 'out', '中国银行股份有限公司', 36, '网银服务费'],
-    ['2026-08-30', '货款收款', 'in', '广州宝洁有限公司', 169800, '销售回款'],
-    ['2026-08-29', '费用报销', 'out', '上海晨光文具股份有限公司', 1290, '办公用品'],
-    ['2026-08-28', '转账汇款', 'out', '杭州海康威视数字技术股份有限公司', 315000, '设备采购'],
-    ['2026-08-27', '工资发放', 'out', '上海外服（集团）有限公司', 84200, '8月工资'],
-    ['2026-08-25', '资金归集', 'in', '美的集团股份有限公司', 420000, '资金归集'],
-    ['2026-08-23', '货款收款', 'in', '比亚迪股份有限公司', 198600, '销售回款'],
-    ['2026-08-22', '转账汇款', 'out', '顺丰速运有限公司', 42800, '物流结算'],
-    ['2026-08-20', '费用报销', 'out', '普华永道商务咨询（上海）有限公司', 5200, '咨询服务费'],
-    ['2026-08-18', '结汇入账', 'in', '中国银行股份有限公司上海市分行', 58760, '欧元结汇'],
-    ['2026-08-16', '货款收款', 'in', '宁波均胜电子股份有限公司', 226400, '销售回款'],
-    ['2026-08-14', '转账汇款', 'out', '天津港股份有限公司', 67200, '仓储费用'],
-    ['2026-08-12', '手续费', 'out', '中国银行股份有限公司', 48, '跨行转账手续费'],
-    ['2026-08-10', '资金归集', 'in', '美的集团股份有限公司', 380000, '资金归集'],
-    ['2026-08-08', '货款收款', 'in', '小米通讯技术有限公司', 176900, '销售回款'],
-    ['2026-08-06', '费用报销', 'out', '上海晨光文具股份有限公司', 2480, '办公费用'],
-    ['2026-08-04', '转账汇款', 'out', '苏州汇川技术有限公司', 93500, '原材料采购'],
-    ['2026-07-30', '货款收款', 'in', '武汉光迅科技股份有限公司', 154800, '销售回款'],
-    ['2026-07-25', '转账汇款', 'out', '京东物流供应链有限公司', 46800, '供应商付款'],
-    ['2026-07-18', '费用报销', 'out', '上海晨光文具股份有限公司', 1860, '办公费用'],
-    ['2026-07-12', '资金归集', 'in', '美的集团股份有限公司', 310000, '资金归集'],
-    ['2026-07-05', '工资发放', 'out', '上海外服（集团）有限公司', 83500, '7月工资'],
-    ['2026-06-28', '货款收款', 'in', '比亚迪股份有限公司', 187600, '销售回款'],
-    ['2026-06-20', '转账汇款', 'out', '广州港股份有限公司', 52200, '仓储结算'],
-    ['2026-06-15', '结汇入账', 'in', '中国银行股份有限公司上海市分行', 39820, '港币结汇'],
-    ['2026-06-08', '费用报销', 'out', '顺丰速运有限公司', 3120, '差旅报销'],
-    ['2026-06-03', '资金归集', 'in', '美的集团股份有限公司', 295000, '资金归集'],
-    ['2026-05-28', '货款收款', 'in', '华为技术有限公司', 162400, '销售回款'],
-    ['2026-05-20', '工资发放', 'out', '上海外服（集团）有限公司', 82100, '5月工资'],
-    ['2026-05-12', '转账汇款', 'out', '宁波均胜电子股份有限公司', 73400, '原材料采购'],
-    ['2026-05-06', '手续费', 'out', '中国银行股份有限公司', 52, '跨行转账手续费'],
-    ['2026-04-26', '资金归集', 'in', '美的集团股份有限公司', 280000, '资金归集'],
-    ['2026-04-18', '货款收款', 'in', '小米通讯技术有限公司', 143900, '销售回款'],
-    ['2026-04-10', '费用报销', 'out', '普华永道商务咨询（上海）有限公司', 4180, '咨询服务费'],
-    ['2026-04-02', '转账汇款', 'out', '京东物流供应链有限公司', 68900, '供应商付款'],
-    ['2026-03-20', '工资发放', 'out', '上海外服（集团）有限公司', 81800, '3月工资'],
-    ['2026-03-08', '货款收款', 'in', '武汉光迅科技股份有限公司', 132500, '销售回款'],
-    ['2026-02-21', '转账汇款', 'out', '天津港股份有限公司', 46200, '物流结算'],
-    ['2026-02-12', '资金归集', 'in', '美的集团股份有限公司', 265000, '资金归集'],
-    ['2026-01-20', '费用报销', 'out', '上海晨光文具股份有限公司', 2250, '办公费用'],
-    ['2026-01-08', '货款收款', 'in', '华为技术有限公司', 121800, '销售回款'],
-  ].map(function (row, index) {
-    return {
-      id: 'TX' + String(index + 1).padStart(4, '0'),
-      date: row[0],
-      time: index % 3 === 0 ? '09:18' : index % 3 === 1 ? '14:06' : '16:42',
-      type: row[1],
-      direction: row[2],
-      counterparty: row[3],
-      account: '62170000' + String(1234 + index * 173),
-      amount: row[4],
-      balance: 30000000 - index * 18200,
-      status: '交易成功',
-      note: row[5],
-    };
-  });
+  var RAW_TRANSACTIONS = [
+    ['2026-01-02', '货款收款', 'in', '成都万创科技股份有限公司', 6800, '酒店系统服务回款'],
+    ['2026-01-07', '转账汇款', 'out', '成都依能科技股份有限公司', 3200, '软件服务费'],
+    ['2026-01-13', '费用报销', 'out', '成都中科大旗软件股份有限公司', 1850, '会议服务费'],
+    ['2026-01-18', '货款收款', 'in', '成都德芯数字科技股份有限公司', 9200, '场地服务收入'],
+    ['2026-01-26', '手续费', 'out', '中国银行股份有限公司成都东大街支行', 25, '网银转账手续费'],
+    ['2026-02-03', '转账汇款', 'out', '成都数联铭品科技有限公司', 5600, '数据服务费'],
+    ['2026-02-08', '货款收款', 'in', '成都佳发安泰教育科技股份有限公司', 7850, '会务接待收入'],
+    ['2026-02-14', '费用报销', 'out', '成都优博创通信技术股份有限公司', 980, '通信服务费'],
+    ['2026-02-19', '货款收款', 'in', '成都四方伟业软件股份有限公司', 4300, '住宿服务收入'],
+    ['2026-02-27', '转账汇款', 'out', '成都索贝数码科技股份有限公司', 6900, '设备维护费'],
+    ['2026-03-04', '货款收款', 'in', '成都唐源电气股份有限公司', 8900, '会务服务收入'],
+    ['2026-03-09', '转账汇款', 'out', '成都成电光信科技股份有限公司', 2750, '技术服务费'],
+    ['2026-03-15', '费用报销', 'out', '成都智元汇信息技术股份有限公司', 1280, '办公服务费'],
+    ['2026-03-20', '货款收款', 'in', '成都纵横自动化技术股份有限公司', 9600, '住宿服务收入'],
+    ['2026-03-28', '手续费', 'out', '中国银行股份有限公司成都东大街支行', 30, '跨行转账手续费'],
+    ['2026-04-02', '货款收款', 'in', '成都理想境界科技有限公司', 7500, '餐饮服务收入'],
+    ['2026-04-08', '转账汇款', 'out', '成都国星通信有限公司', 4600, '网络服务费'],
+    ['2026-04-13', '费用报销', 'out', '成都英黎科技有限公司', 950, '耗材采购'],
+    ['2026-04-19', '货款收款', 'in', '成都万创科技股份有限公司', 8200, '会议接待收入'],
+    ['2026-04-26', '转账汇款', 'out', '成都依能科技股份有限公司', 3100, '软件维护费'],
+    ['2026-05-05', '货款收款', 'in', '成都德芯数字科技股份有限公司', 6300, '住宿服务收入'],
+    ['2026-05-09', '转账汇款', 'out', '成都中科大旗软件股份有限公司', 2400, '平台服务费'],
+    ['2026-05-14', '费用报销', 'out', '成都数联铭品科技有限公司', 1750, '数据服务费'],
+    ['2026-05-20', '货款收款', 'in', '成都佳发安泰教育科技股份有限公司', 9800, '会务接待收入'],
+    ['2026-05-27', '手续费', 'out', '中国银行股份有限公司成都东大街支行', 25, '网银转账手续费'],
+    ['2026-06-03', '转账汇款', 'out', '成都四方伟业软件股份有限公司', 5200, '系统服务费'],
+    ['2026-06-08', '货款收款', 'in', '成都优博创通信技术股份有限公司', 7600, '住宿服务收入'],
+    ['2026-06-14', '费用报销', 'out', '成都索贝数码科技股份有限公司', 2100, '设备租赁费'],
+    ['2026-06-19', '货款收款', 'in', '成都唐源电气股份有限公司', 8450, '会议服务收入'],
+    ['2026-06-25', '投资款入账', 'in', '刘佳', 30000000, '项目期投资款项', '中国银行'],
+    ['2026-06-29', '手续费', 'out', '中国银行股份有限公司成都东大街支行', 50, '大额入账服务费'],
+    ['2026-07-02', '货款收款', 'in', '成都成电光信科技股份有限公司', 5900, '住宿服务收入'],
+    ['2026-07-07', '转账汇款', 'out', '成都智元汇信息技术股份有限公司', 3800, '信息服务费'],
+    ['2026-07-13', '费用报销', 'out', '成都纵横自动化技术股份有限公司', 1450, '设备维护费'],
+    ['2026-07-19', '货款收款', 'in', '成都理想境界科技有限公司', 8700, '会议接待收入'],
+    ['2026-07-27', '转账汇款', 'out', '成都国星通信有限公司', 6200, '通信设备款'],
+    ['2026-08-04', '货款收款', 'in', '成都英黎科技有限公司', 7100, '住宿服务收入'],
+    ['2026-08-09', '转账汇款', 'out', '成都万创科技股份有限公司', 2950, '技术服务费'],
+    ['2026-08-15', '费用报销', 'out', '成都依能科技股份有限公司', 1680, '软件服务费'],
+    ['2026-08-20', '货款收款', 'in', '成都德芯数字科技股份有限公司', 9400, '会务服务收入'],
+    ['2026-08-28', '手续费', 'out', '中国银行股份有限公司成都东大街支行', 25, '网银转账手续费'],
+    ['2026-09-02', '货款收款', 'in', '成都中科大旗软件股份有限公司', 6500, '住宿服务收入'],
+    ['2026-09-05', '转账汇款', 'out', '成都数联铭品科技有限公司', 3400, '数据服务费'],
+    ['2026-09-08', '费用报销', 'out', '成都佳发安泰教育科技股份有限公司', 1250, '会议物料费'],
+    ['2026-09-10', '货款收款', 'in', '成都四方伟业软件股份有限公司', 8800, '会议接待收入'],
+    ['2026-09-12', '手续费', 'out', '中国银行股份有限公司成都东大街支行', 25, '网银转账手续费'],
+  ];
 
-  TRANSACTIONS = TRANSACTIONS.concat(createInterestTransactions(TRANSACTIONS, {
-    from: '2025-10-01',
-    to: '2026-09-10',
-    asOf: DEMO_AS_OF_DATE,
-    annualRate: DEFAULT_ANNUAL_RATE,
-  }));
-  TRANSACTIONS = TRANSACTIONS.filter(function (item) { return item.date <= DEMO_AS_OF_DATE; });
-  TRANSACTIONS = reconcileTransactionBalances(TRANSACTIONS, CURRENT_ACCOUNT_BALANCE);
+  function buildDemoLedger(rows, openingBalance, asOfDate) {
+    var events = rows.map(function (row, index) {
+      return {
+        id: 'TX' + String(index + 1).padStart(4, '0'), date: row[0], time: index % 3 === 0 ? '09:18' : index % 3 === 1 ? '14:06' : '16:42',
+        type: row[1], direction: row[2], counterparty: row[3], account: ACCOUNT_NUMBER,
+        amount: row[4], status: '交易成功', note: row[5], bank: row[6] || '',
+      };
+    }).filter(function (item) { return item.date <= asOfDate; });
+    for (var month = 1; month <= 12; month += 1) {
+      var settlementDate = '2026-' + String(month).padStart(2, '0') + '-21';
+      if (settlementDate > asOfDate) break;
+      events.push({ id: 'INT-' + settlementDate.replace(/-/g, ''), date: settlementDate, time: '09:00', type: '月度结息', direction: 'in', counterparty: '中国银行股份有限公司', account: ACCOUNT_NUMBER, amount: 0, status: '交易成功', note: '人民币活期存款月度结息', bank: '中国银行' });
+    }
+    events.sort(function (a, b) { return (a.date + a.time).localeCompare(b.date + b.time); });
+    var balance = Number(openingBalance);
+    var balanceHistory = [{ date: '2026-01-01', balance: balance }];
+    events.forEach(function (item) {
+      if (item.type === '月度结息') {
+        var monthStart = item.date.slice(0, 8) + '01';
+        var periodEnd = item.date.slice(0, 8) + '20';
+        item.amount = calculateInterestForPeriod(balanceHistory, monthStart, periodEnd, DEFAULT_ANNUAL_RATE);
+      }
+      balance += item.direction === 'in' ? item.amount : -item.amount;
+      item.balance = Math.round(balance * 100) / 100;
+      balanceHistory.push({ date: item.date, balance: item.balance });
+    });
+    return events.sort(function (a, b) { return (b.date + b.time).localeCompare(a.date + a.time); });
+  }
+
+  var TRANSACTIONS = buildDemoLedger(RAW_TRANSACTIONS, OPENING_BALANCE, DEMO_AS_OF_DATE);
+  CURRENT_ACCOUNT_BALANCE = TRANSACTIONS.length ? TRANSACTIONS[0].balance : OPENING_BALANCE;
 
   function formatMoney(value) {
     return Number(value).toLocaleString('zh-CN', { minimumFractionDigits: 2 });
@@ -357,7 +403,7 @@
       '<div class="boc-tx-filters">' +
       '<label class="boc-tx-field">开始日期<input id="bocTxFrom" type="date"></label>' +
       '<label class="boc-tx-field">结束日期<input id="bocTxTo" type="date"></label>' +
-      '<label class="boc-tx-field">交易类型<select id="bocTxType"><option value="all">全部类型</option><option>转账汇款</option><option>工资发放</option><option>货款收款</option><option>费用报销</option><option>资金归集</option><option>结汇入账</option><option>手续费</option><option>季度结息</option></select></label>' +
+      '<label class="boc-tx-field">交易类型<select id="bocTxType"><option value="all">全部类型</option><option>转账汇款</option><option>货款收款</option><option>投资款入账</option><option>费用报销</option><option>手续费</option><option>月度结息</option></select></label>' +
       '<label class="boc-tx-field">收支方向<select id="bocTxDirection"><option value="all">全部</option><option value="in">收入</option><option value="out">支出</option></select></label>' +
       '<label class="boc-tx-field">最低金额<input id="bocTxMin" type="number" min="0" step="0.01" placeholder="不限"></label>' +
       '<label class="boc-tx-field">最高金额<input id="bocTxMax" type="number" min="0" step="0.01" placeholder="不限"></label>' +
@@ -392,7 +438,7 @@
           var selected = selectStatementTransactions(previewRows, from, to);
           error.textContent = '';
           if (previewUrl) URL.revokeObjectURL(previewUrl);
-          var pdf = createTransactionPdf(selected, { account: selected[0] && selected[0].account, currentBalance: CURRENT_ACCOUNT_BALANCE, asOfDate: DEMO_AS_OF_DATE, from: from, to: to });
+          var pdf = createTransactionPdf(selected, { account: ACCOUNT_NUMBER, accountName: '成都万格大集酒店管理有限责任公司', bankName: '中国银行成都东大街支行', currentBalance: CURRENT_ACCOUNT_BALANCE, asOfDate: DEMO_AS_OF_DATE, from: from, to: to });
           previewUrl = URL.createObjectURL(new Blob([pdf], { type: 'application/pdf' }));
           document.getElementById('bocPdfFrame').src = previewUrl;
           document.getElementById('bocPdfCount').textContent = '预览 ' + selected.length + ' 笔交易，区间：' + from + ' 至 ' + to;
@@ -405,7 +451,7 @@
           };
         };
       }
-      document.getElementById('bocPdfFrom').value = state.filters.from || dates[0] || DEMO_AS_OF_DATE;
+      document.getElementById('bocPdfFrom').value = state.filters.from || '2026-01-01';
       document.getElementById('bocPdfTo').value = state.filters.to || dates[dates.length - 1] || DEMO_AS_OF_DATE;
       document.getElementById('bocPdfGenerate').click();
       preview.style.display = 'flex';
@@ -468,6 +514,8 @@
     createInterestTransactions: createInterestTransactions,
     reconcileTransactionBalances: reconcileTransactionBalances,
     createTransactionPdf: createTransactionPdf,
+    accountNumber: ACCOUNT_NUMBER,
+    openingBalance: OPENING_BALANCE,
     currentAccountBalance: CURRENT_ACCOUNT_BALANCE,
     asOfDate: DEMO_AS_OF_DATE,
     transactionEntryMarkup: transactionEntryMarkup,
