@@ -122,8 +122,6 @@
       var creditTotal = pageRows.filter(function (item) { return item.direction === 'in'; }).reduce(function (sum, item) { return sum + item.amount; }, 0);
       var currentPageBalance = pageRows.length ? pageRows[pageRows.length - 1].balance : previousBalance;
 
-      text(30, 560, 14, '交易明细  页面效果预览', 'F1');
-      text(30, 540, 10, '生成数据，非正式银行凭证', 'F1');
       text(650, 560, 10, '中国银行股份有限公司', 'F1');
       text(30, 510, 8, '账号  ' + safe(settings.account || ACCOUNT_NUMBER), 'F1');
       text(30, 499, 5.5, 'Account No.', 'F1', '0.3 0.3 0.3');
@@ -171,8 +169,7 @@
       text(215, totalY + 4, 6, '贷方合计 ' + money(creditTotal), 'F1');
       text(420, totalY + 4, 6, '本页余额 ' + money(currentPageBalance), 'F1');
       text(610, totalY + 4, 6, '本对账期末余额 ' + money(rows.length ? rows[rows.length - 1].balance : previousBalance), 'F1');
-      text(26, 40, 8, '页面效果预览，非银行正式凭证。交易数据由系统生成，仅用于界面展示。', 'F1');
-      text(26, 27, 5, 'Layout preview with generated data. Not an official bank statement.', 'F1', '0.3 0.3 0.3');
+      text(26, 32, 9, '预览非正式', 'F1', '0.3 0.3 0.3');
       var stream = content.join('\n');
       var streamRef = addObject('<< /Length ' + stream.length + ' >>\nstream\n' + stream + '\nendstream');
       var pageRef = addObject('<< /Type /Page /Parent PAGES /MediaBox [0 0 842 595] /Resources << /Font << /F1 ' + fontRef + ' 0 R /F2 ' + fontRef + ' 0 R >> >> /Contents ' + streamRef + ' 0 R >>');

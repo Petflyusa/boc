@@ -218,7 +218,7 @@ test('creates a landscape statement preview without watermark, seal, or demo wor
   assert.match(pdf, new RegExp(utf16Hex('借方发生额')));
   assert.match(pdf, new RegExp(utf16Hex('贷方发生额')));
   assert.match(pdf, new RegExp(utf16Hex('中国银行股份有限公司')));
-  assert.match(pdf, new RegExp(utf16Hex('非正式银行凭证')));
+  assert.match(pdf, new RegExp(utf16Hex('预览非正式')));
   assert.doesNotMatch(pdf, new RegExp(utf16Hex('演示')));
   assert.doesNotMatch(pdf, /0\.63 0\.03 0\.03 RG 1\.2 w 690 535 122 45 re S/);
   assert.match(pdf, new RegExp(utf16Hex('起始日期 20260901')));
