@@ -24,23 +24,66 @@
     .thanks { margin: 24px 0 0; color: #7b828c; font-size: 12px; }
     footer { padding: 20px 24px 28px; color: #868c96; text-align: center; font-size: 12px; letter-spacing: 1px; }
     @media (max-width: 480px) { header { padding: 22px 24px; } main { padding: 20px 16px 36px; } .panel { padding: 36px 24px 28px; } .notice { margin: 24px 0; } }
+    /* Editorial maintenance layout: open space, quiet type, restrained accent. */
+    body { background: #faf9f6; color: #292927; }
+    header { border: 0; padding: 42px clamp(28px, 6.5vw, 104px); justify-content: space-between; font-weight: 400; }
+    .identity { display: flex; align-items: center; gap: 18px; }
+    .brand-mark { width: 2px; height: 30px; border-radius: 0; background: #822f38; }
+    .brand-name { font-size: 15px; letter-spacing: 4px; }
+    .brand-caption { display: block; margin-top: 7px; color: #797970; font-size: 9px; letter-spacing: 2px; }
+    .header-note { font-size: 10px; letter-spacing: 2px; color: #77776e; }
+    main { display: flex; align-items: center; padding: 80px clamp(28px, 14vw, 216px) 110px; }
+    .panel { width: 100%; max-width: 1080px; padding: 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; text-align: left; }
+    .composition { display: grid; grid-template-columns: 1fr 210px; align-items: center; gap: 64px; }
+    h1 { margin: 0; font-family: "Songti SC", "STSong", "Noto Serif CJK SC", serif; font-weight: 400; font-size: clamp(42px, 5.2vw, 76px); line-height: 1.5; letter-spacing: .13em; }
+    .english-title { margin: 18px 0 48px; color: #727269; font-family: Georgia, serif; font-size: 19px; font-style: italic; letter-spacing: .025em; }
+    .description { font-size: 14px; color: #6a6a62; line-height: 2.1; letter-spacing: 1px; }
+    .pause-symbol { display: flex; justify-content: center; gap: 24px; height: 154px; }
+    .pause-symbol span { width: 1px; background: #c9c6bc; }
+    .pause-symbol span:last-child { background: #914a50; }
+    .service-info { display: flex; justify-content: space-between; align-items: flex-end; gap: 32px; margin-top: 88px; padding-top: 26px; border-top: 1px solid #dddbd3; }
+    .notice { background: none; padding: 0; margin: 0; color: #6a6a62; font-size: 12px; letter-spacing: .6px; }
+    .status { background: none; border-radius: 0; padding: 0; margin-bottom: 9px; color: #822f38; font-size: 12px; }
+    .status::before { width: 5px; height: 5px; }
+    button { display: flex; align-items: center; justify-content: space-between; gap: 48px; min-height: 44px; padding: 10px 0; border-radius: 0; border-bottom: 1px solid #822f38; background: none; color: #822f38; font-size: 13px; letter-spacing: 1px; transition: color .2s, gap .2s; }
+    button:hover { background: none; color: #431c21; gap: 56px; }
+    button svg { width: 22px; height: 16px; }
+    footer { display: flex; justify-content: space-between; gap: 24px; padding: 28px clamp(28px, 6.5vw, 104px) 36px; color: #797970; font-size: 10px; letter-spacing: 1px; }
+    @media (max-width: 700px) {
+      header { padding: 28px; } .header-note { display: none; }
+      main { padding: 72px 28px 80px; }
+      .composition { grid-template-columns: 1fr; gap: 0; }
+      .pause-symbol { display: none; }
+      h1 { font-size: clamp(36px, 9vw, 52px); letter-spacing: .1em; }
+      .english-title { font-size: 17px; margin: 14px 0 36px; }
+      .service-info { margin-top: 60px; align-items: flex-start; flex-direction: column; gap: 28px; }
+      button { width: 160px; }
+      footer { padding: 24px 28px; flex-direction: column; gap: 10px; font-size: 9px; }
+    }
+    @media (prefers-reduced-motion: reduce) { button { transition: none; } }
   </style>
 </head>
 <body>
-  <header><span class="brand-mark" aria-hidden="true">S</span>系统服务</header>
+  <header>
+    <div class="identity"><span class="brand-mark" aria-hidden="true"></span><div><span class="brand-name">系统服务</span><span class="brand-caption">ONLINE SERVICES</span></div></div>
+    <span class="header-note">SERVICE AVAILABILITY</span>
+  </header>
   <main>
     <section class="panel" aria-labelledby="maintenance-title">
-      <div class="icon" aria-hidden="true">
-        <svg width="46" height="46" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="8" width="34" height="25" rx="4"/><path d="M18 40h12M24 33v7M18 20h12M24 14v12"/></svg>
+      <div class="composition">
+        <div>
+          <h1 id="maintenance-title">系统维护中</h1>
+          <p class="english-title" lang="en">A moment of pause.</p>
+          <p class="description">系统正在进行维护与升级。<br>暂别片刻，感谢您的耐心等候。</p>
+        </div>
+        <div class="pause-symbol" aria-hidden="true"><span></span><span></span></div>
       </div>
-      <span class="status">服务暂时不可用</span>
-      <h1 id="maintenance-title">系统维护中</h1>
-      <p class="description">系统正在进行维护与升级。<br>维护期间暂停访问，请稍后再试。</p>
-      <div class="notice">恢复时间将另行通知。<br>维护完成后，即可正常访问。</div>
-      <button type="button" onclick="window.location.reload()">刷新页面</button>
-      <p class="thanks">感谢您的理解与耐心等待</p>
+      <div class="service-info">
+        <div><span class="status">服务暂时不可用</span><p class="notice">恢复时间将另行通知</p></div>
+        <button type="button" onclick="window.location.reload()">刷新页面<svg aria-hidden="true" viewBox="0 0 24 16" fill="none" stroke="currentColor"><path d="M1 8h20M15 2l6 6-6 6"/></svg></button>
+      </div>
     </section>
   </main>
-  <footer>SYSTEM MAINTENANCE</footer>
+  <footer><span>SYSTEM MAINTENANCE</span><span>感谢您的理解与支持</span></footer>
 </body>
 </html>
