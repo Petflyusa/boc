@@ -189,7 +189,7 @@
   }
 
   var DEFAULT_ANNUAL_RATE = 0.0005;
-  var DEMO_AS_OF_DATE = '2026-10-22';
+  var DEMO_AS_OF_DATE = '2026-10-21';
   var ACCOUNT_NUMBER = '115863604036';
   var OPENING_BALANCE = 730000;
   var CURRENT_ACCOUNT_BALANCE = OPENING_BALANCE;
@@ -329,7 +329,6 @@
     ['2026-10-19', '费用报销', 'out', '成都华西公用医疗信息服务有限公司', 1280, '办公用品采购'],
     ['2026-10-20', '货款收款', 'in', '成都极米科技股份有限公司', 9200, '会议接待收入'],
     ['2026-10-21', '转账汇款', 'out', '成都数联铭品科技有限公司', 2750, '数据服务费'],
-    ['2026-10-22', '货款收款', 'in', '成都四方伟业软件股份有限公司', 7600, '项目服务收入'],
   ];
 
   function buildDemoLedger(rows, openingBalance, asOfDate) {
