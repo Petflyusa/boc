@@ -41,7 +41,7 @@
     var card = document.querySelector('[cardtitle="余额视图"]');
     var target = card && card.querySelector('.recent-trade .trade-card');
     if (!target) return false;
-    if (!target.querySelector('.' + marker)) target.innerHTML = buildRecentTransactionsTable(getRecentTransactions(scope.BocTransactions.transactions, scope.BocTransactions.asOfDate, 7));
+    if (!target.querySelector('.' + marker)) target.innerHTML = buildRecentTransactionsTable(getRecentTransactions(scope.BocTransactions.transactions, scope.BocTransactions.asOfDate, 7).slice(0, 4));
     if (!document.getElementById('bocRecentTransactionsStyles')) {
       var style = document.createElement('style');
       style.id = 'bocRecentTransactionsStyles';
