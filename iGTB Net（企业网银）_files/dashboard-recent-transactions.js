@@ -17,6 +17,7 @@
     var end = new Date((asOf || asOfDate) + 'T23:59:59Z');
     var start = new Date(end.getTime());
     start.setUTCDate(start.getUTCDate() - (Math.max(1, Number(days) || 7) - 1));
+    start.setUTCHours(0, 0, 0, 0);
     return (transactions || []).filter(function (item) {
       var timestamp = new Date(item.date + 'T' + (item.time || '00:00') + ':00Z');
       return timestamp >= start && timestamp <= end;
