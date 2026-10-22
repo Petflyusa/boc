@@ -121,7 +121,7 @@ test('accrues every day between quarterly settlements without dropping month-end
 
 test('contains generated historical transactions without future dates', () => {
   assert.ok(demoTransactions.length > 24);
-  assert.ok(demoTransactions.every((item) => item.date <= '2026-09-12'));
+  assert.ok(demoTransactions.every((item) => item.date <= '2026-10-22'));
 });
 
 test('uses real-looking legal names for every transaction counterparty', () => {
@@ -182,7 +182,7 @@ test('includes the June 25 investment transfer and only completed quarterly inte
   const interestDates = demoTransactions
     .filter((item) => item.type === '季度结息')
     .map((item) => item.date);
-  assert.deepEqual(interestDates.sort(), ['2026-03-21', '2026-06-21']);
+  assert.deepEqual(interestDates.sort(), ['2026-03-21', '2026-06-21', '2026-09-21']);
 });
 
 test('keeps ordinary amounts in range and counterparties local to Chengdu', () => {
@@ -245,9 +245,9 @@ test('uses the dashboard SVG icon structure for the transaction entry', () => {
 test('selects and sorts transactions from the previous seven days', () => {
   const result = getRecentTransactions([
     { id: 'old', date: '2026-09-03', time: '10:00', amount: 1 },
-    { id: 'newer', date: '2026-09-10', time: '12:00', amount: 2 },
-    { id: 'latest', date: '2026-09-11', time: '09:00', amount: 3 },
-  ], '2026-09-11', 7);
+    { id: 'newer', date: '2026-10-21', time: '12:00', amount: 2 },
+    { id: 'latest', date: '2026-10-22', time: '09:00', amount: 3 },
+  ], '2026-10-22', 7);
   assert.deepEqual(result.map((item) => item.id), ['latest', 'newer']);
 });
 
